@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 
 import { DocumentList } from "@/components/DocumentList";
 import { FaultList } from "@/components/FaultList";
+import { FileCard } from "@/components/FileCard";
 import { ImageGallery, type GalleryImage } from "@/components/ImageGallery";
 import { MaintenanceList } from "@/components/MaintenanceList";
+import { MediaGallery } from "@/components/MediaGallery";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -13,21 +15,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
   ARTICLE_TYPE_LABELS,
-  CATEGORY_LABELS,
-  type Document,
-  type DocumentCategory,
   fetchDocuments,
   fetchEquipmentArticles,
   fetchEquipmentDetail,
+  fetchEquipmentImages,
   fetchFaults,
   fetchMaintenance,
+  type GalleryItem,
 } from "@/lib/api";
 
 interface EquipmentDetailPageProps {
   params: Promise<{ id: string }>;
 }
-
-const IMAGE_FILE_TYPES = new Set(["png", "jpg", "jpeg", "webp"]);
 
 /** 详情页元数据：以设备名称作为页面标题 */
 export async function generateMetadata({
@@ -54,15 +53,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** 按分类取文档子集 */
-function byCategory(documents: Document[], category: DocumentCategory): Document[] {
-  return documents.filter((d) => d.category === category);
-}
-
 /**
  * 设备详情页。
- * 页面结构：设备信息 → 设备图片 → 说明书 → 维修资料 → 相关资料
- *          → 故障知识 → 维护周期。
+ * 页面结构：设备信息 → 资料中心（📄文档/🖼图片/🎬视频/📦文件）
+ *          → 故障知识 → 维护周期 → 维修文章。
  * 四类数据并行请求，任一失败不影响其余区块。
  */
 export default async function EquipmentDetailPage({
@@ -74,34 +68,35 @@ export default async function EquipmentDetailPage({
   if (!detail) notFound();
   const equipment = detail.equipment;
 
-  const [documents, faults, maintenance, articles] = await Promise.all([
+  const [documents, faults, maintenance, articles, equipmentImages] = await Promise.all([
     fetchDocuments(id).catch(() => null),
     fetchFaults(id).catch(() => null),
     fetchMaintenance(id).catch(() => null),
     fetchEquipmentArticles(id).catch(() => null),
+    fetchEquipmentImages(id).catch(() => null),
   ]);
 
   const docs = documents ?? [];
-  // 图片区：设备封面 + 图片类资料（设备照片/接线图/电路图）
-  const galleryImages: GalleryImage[] = [
-    ...(equipment.cover_image
-      ? [{ url: equipment.cover_image, alt: `${equipment.name} 设备图片` }]
-      : []),
-    ...docs
-      .filter((d) => IMAGE_FILE_TYPES.has(d.file_type))
-      .map((d) => ({ url: d.file_url, alt: d.title })),
-  ];
 
-  // 分区：说明书 / 维修资料 / 相关资料（其余类别汇总）
-  const manualDocs = byCategory(docs, "manual");
-  const repairDocs = byCategory(docs, "repair");
-  const relatedDocs = docs.filter(
-    (d) =>
-      d.category !== "manual" &&
-      d.category !== "repair" &&
-      d.category !== "video_debug" &&
-      d.category !== "video_setup",
-  );
+  // 资料中心分组（按预览类型）
+  const pdfDocs = docs.filter((d) => d.preview_type === "pdf");
+  const videoDocs = docs.filter((d) => d.preview_type === "video");
+  const fileDocs = docs.filter((d) => d.preview_type === "none");
+  const imageDocs = docs.filter((d) => d.preview_type === "image");
+
+  // 设备信息卡片内：封面大图（单图）
+  const galleryImages: GalleryImage[] = equipment.cover_image
+    ? [{ url: equipment.cover_image, alt: `${equipment.name} 设备图片` }]
+    : [];
+
+  // 资料中心图片区：封面 + 图片集合（document_images 聚合）
+  const mediaGalleryImages: GalleryItem[] = [
+    ...galleryImages,
+    ...(equipmentImages ?? []).map((img) => ({
+      url: img.image_url,
+      alt: imageDocs.find((d) => d.id === img.document_id)?.title ?? `${equipment.name} 图片`,
+    })),
+  ];
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
@@ -187,73 +182,76 @@ export default async function EquipmentDetailPage({
         </CardContent>
       </Card>
 
-      {/* ---- 说明书 ---- */}
-      {manualDocs.length > 0 && (
-        <section className="mb-8">
-          <SectionTitle>说明书</SectionTitle>
-          <DocumentList documents={manualDocs} />
-        </section>
-      )}
-
-      {/* ---- 维修资料 ---- */}
-      {repairDocs.length > 0 && (
-        <section className="mb-8">
-          <SectionTitle>维修资料</SectionTitle>
-          <DocumentList documents={repairDocs} />
-        </section>
-      )}
-
-      {/* ---- 调试视频 ---- */}
-      {byCategory(docs, "video_debug").length > 0 && (
-        <section className="mb-8">
-          <SectionTitle>调试视频</SectionTitle>
-          <div className="space-y-4">
-            {byCategory(docs, "video_debug").map((doc) => (
-              <div key={doc.id} className="rounded-md border p-3">
-                <Link
-                  href={`/document/${doc.id}`}
-                  className="font-medium hover:text-primary"
-                >
-                  {doc.title}
-                </Link>
-                <VideoPlayer document={doc} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ---- 设置视频 ---- */}
-      {byCategory(docs, "video_setup").length > 0 && (
-        <section className="mb-8">
-          <SectionTitle>设置视频</SectionTitle>
-          <div className="space-y-4">
-            {byCategory(docs, "video_setup").map((doc) => (
-              <div key={doc.id} className="rounded-md border p-3">
-                <Link
-                  href={`/document/${doc.id}`}
-                  className="font-medium hover:text-primary"
-                >
-                  {doc.title}
-                </Link>
-                <VideoPlayer document={doc} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ---- 相关资料（电气图纸/参数手册/软件资料/其他） ---- */}
-      {relatedDocs.length > 0 && (
-        <section className="mb-8">
-          <SectionTitle>相关资料</SectionTitle>
-          <DocumentList documents={relatedDocs} />
-          <p className="mt-2 text-xs text-muted-foreground">
-            分类：
-            {[...new Set(relatedDocs.map((d) => CATEGORY_LABELS[d.category]))].join(" · ")}
+      {/* ---- 资料中心（文档/图片/视频/文件） ---- */}
+      <section className="mb-8">
+        <SectionTitle>资料中心</SectionTitle>
+        {pdfDocs.length === 0 &&
+        videoDocs.length === 0 &&
+        fileDocs.length === 0 &&
+        mediaGalleryImages.length <= 1 ? (
+          <p className="rounded-md border border-dashed py-6 text-center text-sm text-muted-foreground">
+            暂无资料
           </p>
-        </section>
-      )}
+        ) : (
+          <div className="space-y-6">
+            {/* 📄 文档（PDF 说明书/维修手册/参数手册等） */}
+            {pdfDocs.length > 0 && (
+              <div>
+                <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+                  📄 文档<span className="text-xs font-normal">（{pdfDocs.length}）</span>
+                </h3>
+                <DocumentList documents={pdfDocs} />
+              </div>
+            )}
+
+            {/* 🖼 图片（封面 + 图片集合） */}
+            {mediaGalleryImages.length > 1 && (
+              <div>
+                <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+                  🖼 图片<span className="text-xs font-normal">（{mediaGalleryImages.length}）</span>
+                </h3>
+                <MediaGallery images={mediaGalleryImages} />
+              </div>
+            )}
+
+            {/* 🎬 视频（调试/设置视频说明书） */}
+            {videoDocs.length > 0 && (
+              <div>
+                <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+                  🎬 视频<span className="text-xs font-normal">（{videoDocs.length}）</span>
+                </h3>
+                <div className="space-y-4">
+                  {videoDocs.map((doc) => (
+                    <div key={doc.id} className="rounded-md border p-3">
+                      <Link
+                        href={`/document/${doc.id}`}
+                        className="font-medium hover:text-primary"
+                      >
+                        {doc.title}
+                      </Link>
+                      <VideoPlayer document={doc} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 📦 文件（CAD/软件/压缩包等） */}
+            {fileDocs.length > 0 && (
+              <div>
+                <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+                  📦 文件<span className="text-xs font-normal">（{fileDocs.length}）</span>
+                </h3>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {fileDocs.map((doc) => (
+                    <FileCard key={doc.id} document={doc} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
 
       {/* ---- 故障知识 ---- */}
       <section className="mb-8">

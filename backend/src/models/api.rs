@@ -47,6 +47,8 @@ pub struct ApiErr {
 pub enum AppError {
     /// 400 — invalid request (query params, body, multipart, ...)
     BadRequest(String),
+    /// 403 — forbidden (e.g. download disabled)
+    Forbidden(String),
     /// 404 — resource not found
     NotFound(String),
     /// 500 — database failure
@@ -59,6 +61,7 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, error, message) = match self {
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, "bad_request".to_string(), msg),
+            AppError::Forbidden(msg) => (StatusCode::FORBIDDEN, "forbidden".to_string(), msg),
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, "not_found".to_string(), msg),
             AppError::Database(err) => {
                 eprintln!("[error] database: {err}");

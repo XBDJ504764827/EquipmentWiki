@@ -6,6 +6,25 @@ import { useRouter } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/** localStorage 键：搜索历史 */
+export const SEARCH_HISTORY_KEY = "equipmentwiki_search_history";
+
+/** 搜索历史最大条数 */
+const HISTORY_MAX = 10;
+
+/** 把关键词写入本地搜索历史（去重、最新在前） */
+export function saveSearchHistory(keyword: string) {
+  try {
+    const list: string[] = JSON.parse(
+      localStorage.getItem(SEARCH_HISTORY_KEY) ?? "[]",
+    );
+    const next = [keyword, ...list.filter((k) => k !== keyword)].slice(0, HISTORY_MAX);
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next));
+  } catch {
+    // localStorage 不可用时静默忽略
+  }
+}
+
 interface SearchBoxProps {
   /** 初始关键词（从 URL 带入） */
   initialKeyword?: string;
@@ -15,7 +34,7 @@ interface SearchBoxProps {
 
 /**
  * 全局搜索框（客户端组件）：
- * 提交后跳转 /search?keyword=...，保留现有的分类/厂家筛选参数。
+ * 提交后跳转 /search?keyword=...，并把关键词写入本地搜索历史。
  */
 export function SearchBox({ initialKeyword = "", large = false }: SearchBoxProps) {
   const router = useRouter();
@@ -24,9 +43,9 @@ export function SearchBox({ initialKeyword = "", large = false }: SearchBoxProps
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const kw = keyword.trim();
-    const params = new URLSearchParams();
-    if (kw) params.set("keyword", kw);
-    router.push(`/search${params.toString() ? `?${params.toString()}` : ""}`);
+    if (!kw) return;
+    saveSearchHistory(kw);
+    router.push(`/search?keyword=${encodeURIComponent(kw)}`);
   }
 
   return (

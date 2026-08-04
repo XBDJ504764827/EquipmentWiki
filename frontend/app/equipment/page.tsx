@@ -46,7 +46,7 @@ export default async function EquipmentPage({ searchParams }: EquipmentPageProps
         </div>
         {/* 返回搜索入口 */}
         <Link
-          href="/search"
+          href="/"
           className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}
         >
           <Search className="size-4" />

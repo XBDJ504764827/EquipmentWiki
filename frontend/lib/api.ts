@@ -97,7 +97,10 @@ export type DocumentCategory =
   | "software"
   | "other"
   | "video_debug"
-  | "video_setup";
+  | "video_setup"
+  | "image"
+  | "cad"
+  | "archive";
 
 /** 资料分类的中文标签（展示用） */
 export const CATEGORY_LABELS: Record<DocumentCategory, string> = {
@@ -109,6 +112,9 @@ export const CATEGORY_LABELS: Record<DocumentCategory, string> = {
   other: "其他资料",
   video_debug: "调试视频",
   video_setup: "设置视频",
+  image: "图片",
+  cad: "CAD图纸",
+  archive: "压缩文件",
 };
 
 /** 资料分类展示顺序（详情页分区用） */
@@ -121,6 +127,9 @@ export const CATEGORY_ORDER: DocumentCategory[] = [
   "other",
   "video_debug",
   "video_setup",
+  "image",
+  "cad",
+  "archive",
 ];
 
 /** 设备资料（与 backend/src/models/document.rs 对应） */
@@ -146,8 +155,27 @@ export interface Document {
   download_count: number;
   /** 是否为主要文档 */
   is_primary: boolean;
+  /** 存储类型：local / r2 */
+  storage_type: string;
+  /** 文件扩展名：pdf / jpg / dwg / zip ... */
+  file_extension: string;
+  /** 预览类型：pdf / image / video / none */
+  preview_type: string;
+  /** 是否允许下载 */
+  download_enabled: boolean;
+  /** 缩略图地址 */
+  thumbnail_url: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** 图片集合条目（document_images） */
+export interface DocumentImage {
+  id: number;
+  document_id: number;
+  image_url: string;
+  sort_order: number;
+  created_at: string;
 }
 
 /** 故障知识（与 backend/src/models/fault.rs 对应） */
@@ -171,24 +199,27 @@ export interface Maintenance {
   created_at: string;
 }
 
-/** 搜索命中的资料（文档 + 所属设备名） */
+/** 搜索命中的资料（文档 + 所属设备名 + 高亮片段） */
 export interface DocumentHit {
   document: Document;
-  equipment_name: string;
+  equipment_name: string | null;
+  /** 匹配片段（含 <strong> 高亮），后端返回 */
+  snippet?: string | null;
 }
 
-/** 搜索命中的故障（故障 + 所属设备名） */
+/** 搜索命中的故障（故障 + 所属设备名 + 高亮片段） */
 export interface FaultHit {
   fault: Fault;
-  equipment_name: string;
+  equipment_name: string | null;
+  snippet?: string | null;
 }
 
 /** 搜索结果（与 backend/src/models/search.rs 对应） */
 export interface SearchResult {
-  equipment: EquipmentWithCategory[];
+  equipment: (EquipmentWithCategory & { snippet?: string | null })[];
   documents: DocumentHit[];
   faults: FaultHit[];
-  articles: ArticleWithEquipment[];
+  articles: (ArticleWithEquipment & { snippet?: string | null })[];
 }
 
 /** 搜索参数 */
@@ -198,7 +229,9 @@ export interface SearchParams {
   category?: string;
   /** 制造商过滤 */
   manufacturer?: string;
-  /** 搜索范围：equipment | documents | faults */
+  /** 标签过滤 */
+  tag?: string;
+  /** 搜索范围：equipment | documents | faults | articles */
   type?: string;
 }
 
@@ -292,6 +325,7 @@ export function fetchSearch(params: SearchParams): Promise<SearchResult> {
   if (params.keyword) qs.set("keyword", params.keyword);
   if (params.category) qs.set("category", params.category);
   if (params.manufacturer) qs.set("manufacturer", params.manufacturer);
+  if (params.tag) qs.set("tag", params.tag);
   if (params.type) qs.set("type", params.type);
   return request<SearchResult>(`/api/search?${qs.toString()}`);
 }
@@ -381,4 +415,15 @@ export function fetchArticleDetail(idOrSlug: number | string): Promise<ArticleWi
 /** 获取设备相关文章 */
 export function fetchEquipmentArticles(equipmentId: number | string): Promise<ArticleWithEquipment[]> {
   return request<ArticleWithEquipment[]>(`/api/equipment/${equipmentId}/articles`);
+}
+
+/** 获取设备全部图片（图片集合聚合） */
+export function fetchEquipmentImages(equipmentId: number | string): Promise<DocumentImage[]> {
+  return request<DocumentImage[]>(`/api/equipment/${equipmentId}/images`);
+}
+
+/** 画廊图片项 */
+export interface GalleryItem {
+  url: string;
+  alt: string;
 }

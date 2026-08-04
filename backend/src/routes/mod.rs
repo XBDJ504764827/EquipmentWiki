@@ -43,6 +43,10 @@ pub fn app(state: AppState) -> Router {
             "/api/equipment/{id}/documents",
             get(documents::list_by_equipment),
         )
+        .route(
+            "/api/equipment/{id}/images",
+            get(documents::images_by_equipment),
+        )
         .route("/api/documents/{id}", get(documents::detail))
         .route("/api/documents/{id}/download", get(documents::download))
         .route("/api/documents", axum::routing::post(documents::upload))
