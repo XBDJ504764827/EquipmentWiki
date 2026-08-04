@@ -28,8 +28,15 @@ impl From<std::io::Error> for StorageError {
     }
 }
 
-/// Storage backend interface.
+/// Storage provider backend interface.
+///
+/// 设计目标：handlers 只依赖本 trait，不绑定具体云存储。
+/// - [`LocalStorage`]：本地文件系统（当前实现）
+/// - Cloudflare R2：后续按同一接口实现（S3 兼容，使用 `R2_*` 配置）
 pub trait Storage: Send + Sync {
+    /// 存储类型标识："local" / "r2"（写入 documents.storage_type）
+    fn storage_type(&self) -> &'static str;
+
     /// Upload a file, returns its public URL.
     ///
     /// `key` is a logical path, e.g. `equipment/3/manual.pdf`.
@@ -47,6 +54,16 @@ pub trait Storage: Send + Sync {
 
     /// Resolve a key to its public URL.
     fn get_file_url(&self, key: &str) -> String;
+
+    /// Generate a thumbnail for an image payload.
+    ///
+    /// Returns `(extension, thumbnail_bytes)` when the payload is a
+    /// decodable image; `Ok(None)` for non-image files. Used to fill
+    /// `documents.thumbnail_url` on upload.
+    fn generate_thumbnail(
+        &self,
+        bytes: &[u8],
+    ) -> Result<Option<(&'static str, Vec<u8>)>, StorageError>;
 }
 
 // ---------------------------------------------------------------------------
@@ -79,6 +96,10 @@ impl LocalStorage {
 }
 
 impl Storage for LocalStorage {
+    fn storage_type(&self) -> &'static str {
+        "local"
+    }
+
     fn upload_file(&self, key: &str, bytes: &[u8]) -> Result<String, StorageError> {
         let path = self.base_dir.join(key);
         // Prevent path traversal outside the base dir.
@@ -111,6 +132,24 @@ impl Storage for LocalStorage {
 
     fn get_file_url(&self, key: &str) -> String {
         format!("{}/{}", self.public_prefix, key)
+    }
+
+    fn generate_thumbnail(
+        &self,
+        bytes: &[u8],
+    ) -> Result<Option<(&'static str, Vec<u8>)>, StorageError> {
+        // 仅支持图片格式；解码失败（非图片）返回 None
+        let img = match image::load_from_memory(bytes) {
+            Ok(img) => img,
+            Err(_) => return Ok(None),
+        };
+        // 等比缩放到最长边 400px（thumbnail 保持宽高比）
+        let thumb = img.thumbnail(400, 400);
+        let mut out = Vec::new();
+        thumb
+            .write_to(&mut std::io::Cursor::new(&mut out), image::ImageFormat::Png)
+            .map_err(|e| StorageError(format!("thumbnail encode failed: {e}")))?;
+        Ok(Some(("png", out)))
     }
 }
 
@@ -160,6 +199,8 @@ pub fn file_type_of(mime: &str, file_name: &str) -> String {
         "png" => "png",
         "jpg" | "jpeg" => "jpg",
         "webp" => "webp",
+        "mp4" => "mp4",
+        "webm" => "webm",
         "doc" | "docx" => "doc",
         "xls" | "xlsx" => "xls",
         _ => {

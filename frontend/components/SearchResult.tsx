@@ -1,8 +1,6 @@
-import Link from "next/link";
-
 import { EquipmentCard } from "@/components/EquipmentCard";
-import { Badge } from "@/components/ui/badge";
-import type { SearchResult } from "@/lib/api";
+import { SearchResultCard } from "@/components/SearchResultCard";
+import { ARTICLE_TYPE_LABELS, CATEGORY_LABELS, type SearchResult } from "@/lib/api";
 
 interface SearchResultProps {
   result: SearchResult;
@@ -30,12 +28,16 @@ function EmptyHint({ text }: { text: string }) {
 }
 
 /**
- * 搜索结果：按 设备 → 文档 → 故障 三个区块分类展示。
- * 设备用卡片网格；文档/故障用紧凑列表（含所属设备名，可跳转详情页）。
+ * 搜索结果：按 设备 → 文档 → 故障 → 文章 分类展示（相关度排序）。
+ * 设备用卡片网格；其余用 SearchResultCard（标题链接 + 高亮片段 + 类型徽章）。
  */
 export function SearchResultView({ result }: SearchResultProps) {
-  const { equipment, documents, faults } = result;
-  const hasAny = equipment.length > 0 || documents.length > 0 || faults.length > 0;
+  const { equipment, documents, faults, articles } = result;
+  const hasAny =
+    equipment.length > 0 ||
+    documents.length > 0 ||
+    faults.length > 0 ||
+    articles.length > 0;
 
   if (!hasAny) {
     return (
@@ -53,7 +55,7 @@ export function SearchResultView({ result }: SearchResultProps) {
         {equipment.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {equipment.map((eq) => (
-              <EquipmentCard key={eq.id} equipment={eq} />
+              <EquipmentCard key={eq.equipment.id} equipment={eq} />
             ))}
           </div>
         ) : (
@@ -63,28 +65,22 @@ export function SearchResultView({ result }: SearchResultProps) {
 
       {/* ---- 文档结果 ---- */}
       <section>
-        <SectionHeading title="资料" count={documents.length} />
+        <SectionHeading title="文档" count={documents.length} />
         {documents.length > 0 ? (
           <ul className="divide-y rounded-md border">
-            {documents.map(({ document, equipment_name }) => (
-              <li key={document.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{document.title}</p>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                    {document.description || "—"}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Link
-                    href={`/equipment/${document.equipment_id}`}
-                    className="max-w-40 truncate text-sm text-primary hover:underline"
-                  >
-                    {equipment_name}
-                  </Link>
-                  <Badge variant="secondary" className="uppercase">
-                    {document.file_type}
-                  </Badge>
-                </div>
+            {documents.map(({ document, equipment_name, snippet }) => (
+              <li key={document.id}>
+                <SearchResultCard
+                  title={document.title}
+                  href={`/document/${document.id}`}
+                  snippet={snippet}
+                  badge={CATEGORY_LABELS[document.category] ?? document.category}
+                  meta={
+                    equipment_name
+                      ? `设备：${equipment_name} · ${document.file_type.toUpperCase()}`
+                      : document.file_type.toUpperCase()
+                  }
+                />
               </li>
             ))}
           </ul>
@@ -98,25 +94,42 @@ export function SearchResultView({ result }: SearchResultProps) {
         <SectionHeading title="故障" count={faults.length} />
         {faults.length > 0 ? (
           <ul className="divide-y rounded-md border">
-            {faults.map(({ fault, equipment_name }) => (
-              <li key={fault.id} className="px-4 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium">{fault.title}</p>
-                  <Link
-                    href={`/equipment/${fault.equipment_id}`}
-                    className="max-w-40 truncate text-sm text-primary hover:underline"
-                  >
-                    {equipment_name}
-                  </Link>
-                </div>
-                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                  {fault.symptom || fault.solution}
-                </p>
+            {faults.map(({ fault, equipment_name, snippet }) => (
+              <li key={fault.id}>
+                <SearchResultCard
+                  title={fault.title}
+                  href={`/equipment/${fault.equipment_id}`}
+                  snippet={snippet}
+                  badge="故障"
+                  meta={equipment_name ? `设备：${equipment_name}` : null}
+                />
               </li>
             ))}
           </ul>
         ) : (
           <EmptyHint text="未找到匹配故障" />
+        )}
+      </section>
+
+      {/* ---- 文章结果 ---- */}
+      <section>
+        <SectionHeading title="文章" count={articles.length} />
+        {articles.length > 0 ? (
+          <ul className="divide-y rounded-md border">
+            {articles.map(({ article, equipment_name, snippet }) => (
+              <li key={article.id}>
+                <SearchResultCard
+                  title={article.title}
+                  href={`/articles/${article.slug}`}
+                  snippet={snippet}
+                  badge={ARTICLE_TYPE_LABELS[article.article_type] ?? article.article_type}
+                  meta={equipment_name ? `设备：${equipment_name}` : null}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyHint text="未找到匹配文章" />
         )}
       </section>
     </div>

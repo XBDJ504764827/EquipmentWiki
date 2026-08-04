@@ -19,10 +19,33 @@ use axum::{
 
 use crate::models::{
     api::{ApiOk, ApiResult, AppError},
-    document::Document,
+    document::{Document, DocumentImage, preview_type_of},
 };
 use crate::routes::AppState;
 use crate::services::storage::{document_key, file_type_of};
+
+/// `GET /api/equipment/{id}/images` — all images of an equipment.
+///
+/// 聚合该设备所有图片类文档的图片集合（document_images），
+/// 按文档创建时间与 sort_order 排序，用于设备图片墙展示。
+pub async fn images_by_equipment(
+    State(state): State<AppState>,
+    Path(equipment_id): Path<i64>,
+) -> ApiResult<Json<ApiOk<Vec<DocumentImage>>>> {
+    let images: Vec<DocumentImage> = sqlx::query_as::<_, DocumentImage>(
+        "SELECT di.id, di.document_id, di.image_url, di.sort_order, di.created_at
+         FROM document_images di
+         JOIN documents d ON d.id = di.document_id
+         WHERE d.equipment_id = $1
+         ORDER BY d.created_at DESC, di.sort_order ASC",
+    )
+    .bind(equipment_id)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(AppError::Database)?;
+
+    Ok(Json(ApiOk::success(images)))
+}
 
 /// `GET /api/equipment/{id}/documents` — all documents of an equipment.
 pub async fn list_by_equipment(
@@ -32,6 +55,7 @@ pub async fn list_by_equipment(
     let documents: Vec<Document> = sqlx::query_as::<_, Document>(
         "SELECT id, equipment_id, title, description, file_url, file_type, category, \
                 version, language, file_size, mime_type, download_count, is_primary, \
+                storage_type, file_extension, preview_type, download_enabled, thumbnail_url, \
                 created_at, updated_at
          FROM documents
          WHERE equipment_id = $1
@@ -53,6 +77,7 @@ pub async fn detail(
     let document: Option<Document> = sqlx::query_as::<_, Document>(
         "SELECT id, equipment_id, title, description, file_url, file_type, category, \
                 version, language, file_size, mime_type, download_count, is_primary, \
+                storage_type, file_extension, preview_type, download_enabled, thumbnail_url, \
                 created_at, updated_at
          FROM documents
          WHERE id = $1",
@@ -77,6 +102,7 @@ pub async fn download(State(state): State<AppState>, Path(id): Path<i64>) -> Api
     let document: Option<Document> = sqlx::query_as::<_, Document>(
         "SELECT id, equipment_id, title, description, file_url, file_type, category, \
                 version, language, file_size, mime_type, download_count, is_primary, \
+                storage_type, file_extension, preview_type, download_enabled, thumbnail_url, \
                 created_at, updated_at
          FROM documents
          WHERE id = $1",
@@ -88,6 +114,13 @@ pub async fn download(State(state): State<AppState>, Path(id): Path<i64>) -> Api
 
     let document =
         document.ok_or_else(|| AppError::NotFound(format!("document {id} not found")))?;
+
+    // 禁止下载的资料返回 403
+    if !document.download_enabled {
+        return Err(AppError::Forbidden(format!(
+            "document {id} download is disabled"
+        )));
+    }
 
     // 2. 下载计数 +1
     sqlx::query("UPDATE documents SET download_count = download_count + 1 WHERE id = $1")
@@ -221,13 +254,42 @@ pub async fn upload(
         .upload_file(&key, &file_bytes)
         .map_err(|e| AppError::Storage(e.0))?;
     let file_type = file_type_of(&file_mime, &file_name);
+    let file_extension = file_name
+        .rsplit('.')
+        .next()
+        .map(|e| e.to_ascii_lowercase())
+        .unwrap_or_default();
+    let preview_type = preview_type_of(&file_type);
+    let storage_type = state.storage.storage_type();
+
+    // 图片类资料：自动生成缩略图并保存
+    let mut thumbnail_url: Option<String> = None;
+    if preview_type == "image"
+        && let Some((thumb_ext, thumb_bytes)) = state
+            .storage
+            .generate_thumbnail(&file_bytes)
+            .map_err(|e| AppError::Storage(e.0))?
+    {
+        let thumb_key = format!(
+            "equipment/{equipment_id}/thumbs/{}-{}.{thumb_ext}",
+            chrono::Utc::now().timestamp(),
+            file_name
+        );
+        let thumb_url = state
+            .storage
+            .upload_file(&thumb_key, &thumb_bytes)
+            .map_err(|e| AppError::Storage(e.0))?;
+        thumbnail_url = Some(thumb_url);
+    }
 
     let document: Document = sqlx::query_as::<_, Document>(
         "INSERT INTO documents
-            (equipment_id, title, description, file_url, file_type, category, version, language, file_size, mime_type)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            (equipment_id, title, description, file_url, file_type, category, version, language, \
+             file_size, mime_type, storage_type, file_extension, preview_type, thumbnail_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          RETURNING id, equipment_id, title, description, file_url, file_type, category, \
                 version, language, file_size, mime_type, download_count, is_primary, \
+                storage_type, file_extension, preview_type, download_enabled, thumbnail_url, \
                 created_at, updated_at",
     )
     .bind(equipment_id)
@@ -240,9 +302,33 @@ pub async fn upload(
     .bind(language.trim())
     .bind(file_bytes.len() as i64)
     .bind(&file_mime)
+    .bind(storage_type)
+    .bind(&file_extension)
+    .bind(preview_type)
+    .bind(&thumbnail_url)
     .fetch_one(&state.pool)
     .await
     .map_err(AppError::Database)?;
+
+    // 图片类资料：同步写入图片集合（document_images），供设备图片聚合展示
+    if preview_type == "image" {
+        let next_order: i32 = sqlx::query_scalar(
+            "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM document_images WHERE document_id = $1",
+        )
+        .bind(document.id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(AppError::Database)?;
+        sqlx::query(
+            "INSERT INTO document_images (document_id, image_url, sort_order) VALUES ($1, $2, $3)",
+        )
+        .bind(document.id)
+        .bind(&file_url)
+        .bind(next_order)
+        .execute(&state.pool)
+        .await
+        .map_err(AppError::Database)?;
+    }
 
     Ok((StatusCode::CREATED, Json(ApiOk::success(document))))
 }

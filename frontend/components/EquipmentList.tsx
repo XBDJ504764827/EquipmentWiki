@@ -8,6 +8,8 @@ import type { EquipmentListResult } from "@/lib/api";
 interface EquipmentListProps {
   /** 分页数据 */
   data: EquipmentListResult;
+  /** 当前分类筛选（分页链接需保留） */
+  categoryId?: number | null;
 }
 
 /**
@@ -15,7 +17,10 @@ interface EquipmentListProps {
  * 分页通过 URL query 参数实现（/equipment?page=N），
  * 页面本身是服务端渲染，翻页即重新请求。
  */
-export function EquipmentList({ data }: EquipmentListProps) {
+export function EquipmentList({ data, categoryId = null }: EquipmentListProps) {
+  /** 分页链接：保留分类筛选参数 */
+  const pageHref = (page: number) =>
+    `/equipment?page=${page}${categoryId != null ? `&category_id=${categoryId}` : ""}`;
   const { items, page, limit, total } = data;
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
@@ -33,7 +38,7 @@ export function EquipmentList({ data }: EquipmentListProps) {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((equipment) => (
-            <EquipmentCard key={equipment.id} equipment={equipment} />
+            <EquipmentCard key={equipment.equipment.id} equipment={equipment} />
           ))}
         </div>
       )}
@@ -42,7 +47,7 @@ export function EquipmentList({ data }: EquipmentListProps) {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-4">
           <Link
-            href={page > 1 ? `/equipment?page=${page - 1}` : "#"}
+            href={page > 1 ? pageHref(page - 1) : "#"}
             className={cn(
               buttonVariants({ variant: "outline", size: "sm" }),
               page <= 1 && "pointer-events-none opacity-50",
@@ -54,7 +59,7 @@ export function EquipmentList({ data }: EquipmentListProps) {
             {page} / {totalPages}
           </span>
           <Link
-            href={page < totalPages ? `/equipment?page=${page + 1}` : "#"}
+            href={page < totalPages ? pageHref(page + 1) : "#"}
             className={cn(
               buttonVariants({ variant: "outline", size: "sm" }),
               page >= totalPages && "pointer-events-none opacity-50",

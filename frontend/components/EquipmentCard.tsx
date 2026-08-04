@@ -11,18 +11,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { Equipment } from "@/lib/api";
+import type { EquipmentWithCategory } from "@/lib/api";
 
 /** 设备卡片：封面图 + 名称、型号、厂家、分类 + 查看详情入口 */
-export function EquipmentCard({ equipment }: { equipment: Equipment }) {
+export function EquipmentCard({ equipment }: { equipment: EquipmentWithCategory }) {
   return (
     <Card className="flex h-full flex-col overflow-hidden">
       {/* 封面图（未配置时显示占位） */}
       <div className="relative h-36 w-full bg-muted/40">
-        {equipment.cover_image ? (
+        {equipment.equipment.cover_image ? (
           <Image
-            src={equipment.cover_image}
-            alt={equipment.name}
+            src={equipment.equipment.cover_image}
+            alt={equipment.equipment.name}
             fill
             unoptimized
             className="object-cover"
@@ -36,9 +36,9 @@ export function EquipmentCard({ equipment }: { equipment: Equipment }) {
 
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-base leading-snug">{equipment.name}</CardTitle>
+          <CardTitle className="text-base leading-snug">{equipment.equipment.name}</CardTitle>
           <Badge variant="secondary" className="shrink-0">
-            {equipment.category}
+            {equipment.category_name ?? "未分类"}
           </Badge>
         </div>
       </CardHeader>
@@ -46,17 +46,17 @@ export function EquipmentCard({ equipment }: { equipment: Equipment }) {
       <CardContent className="flex-1 space-y-1.5 pb-3 text-sm text-muted-foreground">
         <p>
           <span className="text-foreground">型号：</span>
-          {equipment.model || "—"}
+          {equipment.equipment.model || "—"}
         </p>
         <p>
           <span className="text-foreground">厂家：</span>
-          {equipment.manufacturer || "—"}
+          {equipment.equipment.manufacturer || "—"}
         </p>
       </CardContent>
 
       <CardFooter>
         <Link
-          href={`/equipment/${equipment.id}`}
+          href={`/equipment/${equipment.equipment.id}`}
           className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full")}
         >
           查看详情
