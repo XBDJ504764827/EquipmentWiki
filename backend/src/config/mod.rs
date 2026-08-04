@@ -13,6 +13,8 @@ pub struct Config {
     pub r2_access_key: String,
     pub r2_secret_key: String,
     pub r2_bucket: String,
+    /// Local directory for uploaded files (dev/testing).
+    pub storage_dir: String,
 }
 
 impl Config {
@@ -30,6 +32,7 @@ impl Config {
             r2_access_key: env::var("R2_ACCESS_KEY")?,
             r2_secret_key: env::var("R2_SECRET_KEY")?,
             r2_bucket: env::var("R2_BUCKET")?,
+            storage_dir: env::var("STORAGE_DIR").unwrap_or_else(|_| "./storage".to_string()),
         })
     }
 }

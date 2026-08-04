@@ -64,6 +64,42 @@ npm run dev
 
 前端默认运行在 `http://localhost:3000`。
 
+## 开发流程（Git 分支 + CI）
+
+项目采用 `feature/* → develop → main` 分支开发流程，所有代码进入 `develop` 或 `main` 前必须通过 GitHub Actions CI 检查（见 [.github/workflows/ci.yml](.github/workflows/ci.yml)）。
+
+```
+feature 分支开发
+     ↓
+提交 Pull Request 到 develop
+     ↓
+CI 自动检查（前端 type-check/lint/build，后端 check/test/fmt/clippy）
+     ↓
+合并 develop
+     ↓
+develop 提交 Pull Request 到 main
+     ↓
+CI 检查
+     ↓
+合并 main
+```
+
+CI 触发规则：
+
+| 事件 | 触发检查 |
+| --- | --- |
+| `feature/*` 分支 push | ✅ 代码检查 |
+| Pull Request → `develop` | ✅ 完整检查 |
+| Pull Request → `main` | ✅ 完整检查 |
+| `develop` / `main` push | ✅ 完整检查 |
+
+CI 检查项：
+
+- **前端**（`frontend/`）：`npm ci` → `npm run type-check` → `npm run lint` → `npm run build`
+- **后端**（`backend/`）：`cargo check` → `cargo test` → `cargo fmt --check` → `cargo clippy -- -D warnings`
+
+任何一步失败即 CI 失败，阻止合并。
+
 ## 文档
 
 - [前端说明](frontend/README.md)
