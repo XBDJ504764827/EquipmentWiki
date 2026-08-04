@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { EquipmentCard } from "@/components/EquipmentCard";
 import { Badge } from "@/components/ui/badge";
-import type { SearchResult } from "@/lib/api";
+import { ARTICLE_TYPE_LABELS, type SearchResult } from "@/lib/api";
 
 interface SearchResultProps {
   result: SearchResult;
@@ -34,8 +34,12 @@ function EmptyHint({ text }: { text: string }) {
  * 设备用卡片网格；文档/故障用紧凑列表（含所属设备名，可跳转详情页）。
  */
 export function SearchResultView({ result }: SearchResultProps) {
-  const { equipment, documents, faults } = result;
-  const hasAny = equipment.length > 0 || documents.length > 0 || faults.length > 0;
+  const { equipment, documents, faults, articles } = result;
+  const hasAny =
+    equipment.length > 0 ||
+    documents.length > 0 ||
+    faults.length > 0 ||
+    articles.length > 0;
 
   if (!hasAny) {
     return (
@@ -117,6 +121,41 @@ export function SearchResultView({ result }: SearchResultProps) {
           </ul>
         ) : (
           <EmptyHint text="未找到匹配故障" />
+        )}
+      </section>
+
+      {/* ---- 文章结果 ---- */}
+      <section>
+        <SectionHeading title="文章" count={articles.length} />
+        {articles.length > 0 ? (
+          <ul className="divide-y rounded-md border">
+            {articles.map(({ article, equipment_name: eqName }) => (
+              <li key={article.id} className="px-4 py-3">
+                <Link
+                  href={`/articles/${article.slug}`}
+                  className="flex items-center justify-between gap-3 hover:text-primary"
+                >
+                  <p className="min-w-0 truncate font-medium">{article.title}</p>
+                  <Badge variant="outline" className="shrink-0">
+                    {ARTICLE_TYPE_LABELS[article.article_type] ?? article.article_type}
+                  </Badge>
+                </Link>
+                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                  {article.summary || article.content}
+                </p>
+                {eqName && article.equipment_id && (
+                  <Link
+                    href={`/equipment/${article.equipment_id}`}
+                    className="mt-1 inline-block text-xs text-primary hover:underline"
+                  >
+                    设备：{eqName}
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyHint text="未找到匹配文章" />
         )}
       </section>
     </div>

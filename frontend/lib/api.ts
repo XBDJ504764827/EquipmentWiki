@@ -95,7 +95,9 @@ export type DocumentCategory =
   | "electrical"
   | "parameter"
   | "software"
-  | "other";
+  | "other"
+  | "video_debug"
+  | "video_setup";
 
 /** 资料分类的中文标签（展示用） */
 export const CATEGORY_LABELS: Record<DocumentCategory, string> = {
@@ -105,6 +107,8 @@ export const CATEGORY_LABELS: Record<DocumentCategory, string> = {
   parameter: "参数手册",
   software: "软件资料",
   other: "其他资料",
+  video_debug: "调试视频",
+  video_setup: "设置视频",
 };
 
 /** 资料分类展示顺序（详情页分区用） */
@@ -115,6 +119,8 @@ export const CATEGORY_ORDER: DocumentCategory[] = [
   "parameter",
   "software",
   "other",
+  "video_debug",
+  "video_setup",
 ];
 
 /** 设备资料（与 backend/src/models/document.rs 对应） */
@@ -182,6 +188,7 @@ export interface SearchResult {
   equipment: EquipmentWithCategory[];
   documents: DocumentHit[];
   faults: FaultHit[];
+  articles: ArticleWithEquipment[];
 }
 
 /** 搜索参数 */
@@ -231,12 +238,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 /**
- * 获取设备列表（分页）。
+ * 获取设备列表（分页 + 分类筛选）。
  * @param page 页码，从 1 开始
  * @param limit 每页数量，默认 12
+ * @param categoryId 分类筛选（含子分类），不传为全部
  */
-export function fetchEquipmentList(page = 1, limit = 12): Promise<EquipmentListResult> {
-  return request<EquipmentListResult>(`/api/equipment?page=${page}&limit=${limit}`);
+export function fetchEquipmentList(
+  page = 1,
+  limit = 12,
+  categoryId?: number | string,
+): Promise<EquipmentListResult> {
+  const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (categoryId != null) qs.set("category_id", String(categoryId));
+  return request<EquipmentListResult>(`/api/equipment?${qs.toString()}`);
 }
 
 /** 获取设备详情（含分类路径 + 标签） */
@@ -300,4 +314,71 @@ export function fetchTags(): Promise<Tag[]> {
 /** 获取标签下设备 */
 export function fetchTagEquipment(tagId: number | string): Promise<EquipmentWithCategory[]> {
   return request<EquipmentWithCategory[]>(`/api/tags/${tagId}/equipment`);
+}
+
+/** 文章类型 */
+export type ArticleType = "repair" | "guide" | "maintenance" | "experience" | "other";
+
+/** 文章类型中文标签 */
+export const ARTICLE_TYPE_LABELS: Record<ArticleType, string> = {
+  repair: "维修教程",
+  guide: "操作指南",
+  maintenance: "维护教程",
+  experience: "维修经验",
+  other: "其他",
+};
+
+/** 维修知识文章（与 backend/src/models/article.rs 对应） */
+export interface Article {
+  id: number;
+  equipment_id: number | null;
+  title: string;
+  /** URL 路径（SEO） */
+  slug: string;
+  summary: string;
+  /** Markdown 正文 */
+  content: string;
+  cover_image: string | null;
+  article_type: ArticleType;
+  created_at: string;
+  updated_at: string;
+}
+
+/** 文章 + 关联设备名 */
+export interface ArticleWithEquipment {
+  article: Article;
+  equipment_name: string | null;
+}
+
+/** 文章分页列表 */
+export interface ArticleListResult {
+  items: ArticleWithEquipment[];
+  page: number;
+  limit: number;
+  total: number;
+}
+
+/** 获取文章列表（page/limit/type/equipment_id 筛选） */
+export function fetchArticles(params?: {
+  page?: number;
+  limit?: number;
+  type?: string;
+  equipment_id?: number | string;
+}): Promise<ArticleListResult> {
+  const qs = new URLSearchParams();
+  if (params?.page) qs.set("page", String(params.page));
+  if (params?.limit) qs.set("limit", String(params.limit));
+  if (params?.type) qs.set("type", params.type);
+  if (params?.equipment_id != null) qs.set("equipment_id", String(params.equipment_id));
+  return request<ArticleListResult>(`/api/articles${qs.toString() ? `?${qs.toString()}` : ""}`);
+}
+
+/** 获取文章详情（支持 id 或 slug） */
+export function fetchArticleDetail(idOrSlug: number | string): Promise<ArticleWithEquipment> {
+  return request<ArticleWithEquipment>(`/api/articles/${idOrSlug}`);
+}
+
+/** 获取设备相关文章 */
+export function fetchEquipmentArticles(equipmentId: number | string): Promise<ArticleWithEquipment[]> {
+  return request<ArticleWithEquipment[]>(`/api/equipment/${equipmentId}/articles`);
 }

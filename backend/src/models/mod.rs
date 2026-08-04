@@ -4,6 +4,7 @@
 //! maintenance knowledge.
 
 pub mod api;
+pub mod article;
 pub mod category;
 pub mod document;
 pub mod equipment;

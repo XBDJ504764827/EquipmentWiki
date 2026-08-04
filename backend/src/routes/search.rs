@@ -21,6 +21,7 @@ use serde::Deserialize;
 
 use crate::models::{
     api::{ApiOk, ApiResult},
+    article::ArticleWithEquipment,
     equipment::EquipmentWithCategory,
     search::{DocumentHit, FaultHit, SearchResult},
 };
@@ -71,6 +72,7 @@ pub async fn search(
             equipment: vec![],
             documents: vec![],
             faults: vec![],
+            articles: vec![],
         })));
     }
 
@@ -150,6 +152,39 @@ pub async fn search(
     };
 
     // ---- 3. 故障搜索：标题/现象/解决方案 ----
+    // ---- 4. 文章搜索：标题/摘要/正文 ----
+    let articles: Vec<ArticleWithEquipment> = if want(&search_type, "articles") {
+        sqlx::query_as::<_, ArticleWithEquipment>(
+            "SELECT a.id, a.equipment_id, a.title, a.slug, a.summary, a.content,
+                    a.cover_image, a.type AS article_type, a.created_at, a.updated_at,
+                    e.name AS equipment_name
+             FROM articles a
+             LEFT JOIN equipment e ON e.id = a.equipment_id
+             WHERE (a.title ILIKE $1 OR a.summary ILIKE $1 OR a.content ILIKE $1)
+               AND ($2 = '' OR EXISTS (
+                    WITH RECURSIVE ancestors AS (
+                        SELECT id, name, parent_id FROM equipment_categories WHERE id = e.category_id
+                        UNION ALL
+                        SELECT c.id, c.name, c.parent_id
+                        FROM equipment_categories c JOIN ancestors a2 ON c.id = a2.parent_id
+                    )
+                    SELECT 1 FROM ancestors WHERE name = $2
+               ))
+               AND ($3 = '' OR e.manufacturer = $3)
+             ORDER BY a.created_at DESC
+             LIMIT $4",
+        )
+        .bind(&pattern)
+        .bind(&cat)
+        .bind(&mfr)
+        .bind(MAX_HITS)
+        .fetch_all(&state.pool)
+        .await
+        .map_err(crate::models::api::AppError::Database)?
+    } else {
+        vec![]
+    };
+
     let faults: Vec<FaultHit> = if want(&search_type, "faults") {
         sqlx::query_as::<_, FaultHit>(
             "SELECT f.id, f.equipment_id, f.title, f.symptom, f.reason, f.solution, f.created_at,
@@ -186,5 +221,6 @@ pub async fn search(
         equipment,
         documents,
         faults,
+        articles,
     })))
 }

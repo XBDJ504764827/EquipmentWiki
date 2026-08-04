@@ -2,6 +2,7 @@
 //!
 //! Business endpoints: equipment, documents (files), faults, maintenance.
 
+pub mod article;
 pub mod categories;
 pub mod documents;
 pub mod equipment;
@@ -57,6 +58,13 @@ pub fn app(state: AppState) -> Router {
         // ---- tags ----
         .route("/api/tags", get(tags::list))
         .route("/api/tags/{id}/equipment", get(tags::equipment_by_tag))
+        // ---- articles ----
+        .route("/api/articles", get(article::list).post(article::create))
+        .route("/api/articles/{id_or_slug}", get(article::detail))
+        .route(
+            "/api/equipment/{id}/articles",
+            get(article::list_by_equipment),
+        )
         // ---- search ----
         .route("/api/search", get(search::search))
         // ---- maintenance ----

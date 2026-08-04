@@ -160,6 +160,8 @@ pub fn file_type_of(mime: &str, file_name: &str) -> String {
         "png" => "png",
         "jpg" | "jpeg" => "jpg",
         "webp" => "webp",
+        "mp4" => "mp4",
+        "webm" => "webm",
         "doc" | "docx" => "doc",
         "xls" | "xlsx" => "xls",
         _ => {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { VideoPlayer } from "@/components/VideoPlayer";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -134,6 +135,11 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
             title={document.title}
             className="h-[70vh] w-full"
           />
+        ) : document.file_type === "mp4" || document.file_type === "webm" ? (
+          // 视频说明书：HTML5 原生播放
+          <div className="p-4">
+            <VideoPlayer document={document} />
+          </div>
         ) : (
           <div className="flex flex-col items-center gap-3 py-14 text-sm text-muted-foreground">
             <span>该类型（{document.file_type.toUpperCase()}）不支持在线预览</span>

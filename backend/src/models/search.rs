@@ -5,6 +5,7 @@
 
 use serde::Serialize;
 
+use super::article::ArticleWithEquipment;
 use super::document::Document;
 use super::equipment::EquipmentWithCategory;
 use super::fault::Fault;
@@ -36,4 +37,6 @@ pub struct SearchResult {
     pub documents: Vec<DocumentHit>,
     /// 故障匹配结果
     pub faults: Vec<FaultHit>,
+    /// 维修文章匹配结果
+    pub articles: Vec<ArticleWithEquipment>,
 }

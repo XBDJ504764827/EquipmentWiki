@@ -31,6 +31,8 @@ pub struct ListParams {
     pub page: Option<i64>,
     /// Items per page. Default: 20, max: 100
     pub limit: Option<i64>,
+    /// 按分类筛选（递归包含所有子分类下的设备）
+    pub category_id: Option<i64>,
 }
 
 /// `GET /api/equipment` — paginated equipment list (with category name).
@@ -42,19 +44,42 @@ pub async fn list(
     let limit = params.limit.unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * limit;
 
-    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM equipment")
-        .fetch_one(&state.pool)
-        .await
-        .map_err(AppError::Database)?;
+    // 分类筛选：递归 CTE 收集该分类及其所有子分类，$1 为 NULL 时不过滤
+    let total: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM equipment e
+         WHERE ($1::bigint IS NULL OR e.category_id IN (
+             WITH RECURSIVE descendants AS (
+                 SELECT id FROM equipment_categories WHERE id = $1
+                 UNION ALL
+                 SELECT c.id FROM equipment_categories c
+                 JOIN descendants d ON c.parent_id = d.id
+             )
+             SELECT id FROM descendants
+         ))",
+    )
+    .bind(params.category_id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(AppError::Database)?;
 
     let items: Vec<EquipmentWithCategory> = sqlx::query_as::<_, EquipmentWithCategory>(
         "SELECT e.id, e.name, e.model, e.manufacturer, e.category_id, e.description, \
                 e.cover_image, e.created_at, e.updated_at, c.name AS category_name
          FROM equipment e
          LEFT JOIN equipment_categories c ON c.id = e.category_id
+         WHERE ($1::bigint IS NULL OR e.category_id IN (
+             WITH RECURSIVE descendants AS (
+                 SELECT id FROM equipment_categories WHERE id = $1
+                 UNION ALL
+                 SELECT c.id FROM equipment_categories c
+                 JOIN descendants d ON c.parent_id = d.id
+             )
+             SELECT id FROM descendants
+         ))
          ORDER BY e.id DESC
-         LIMIT $1 OFFSET $2",
+         LIMIT $2 OFFSET $3",
     )
+    .bind(params.category_id)
     .bind(limit)
     .bind(offset)
     .fetch_all(&state.pool)

@@ -6,15 +6,18 @@ import { DocumentList } from "@/components/DocumentList";
 import { FaultList } from "@/components/FaultList";
 import { ImageGallery, type GalleryImage } from "@/components/ImageGallery";
 import { MaintenanceList } from "@/components/MaintenanceList";
+import { VideoPlayer } from "@/components/VideoPlayer";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
+  ARTICLE_TYPE_LABELS,
   CATEGORY_LABELS,
   type Document,
   type DocumentCategory,
   fetchDocuments,
+  fetchEquipmentArticles,
   fetchEquipmentDetail,
   fetchFaults,
   fetchMaintenance,
@@ -71,10 +74,11 @@ export default async function EquipmentDetailPage({
   if (!detail) notFound();
   const equipment = detail.equipment;
 
-  const [documents, faults, maintenance] = await Promise.all([
+  const [documents, faults, maintenance, articles] = await Promise.all([
     fetchDocuments(id).catch(() => null),
     fetchFaults(id).catch(() => null),
     fetchMaintenance(id).catch(() => null),
+    fetchEquipmentArticles(id).catch(() => null),
   ]);
 
   const docs = documents ?? [];
@@ -92,7 +96,11 @@ export default async function EquipmentDetailPage({
   const manualDocs = byCategory(docs, "manual");
   const repairDocs = byCategory(docs, "repair");
   const relatedDocs = docs.filter(
-    (d) => d.category !== "manual" && d.category !== "repair",
+    (d) =>
+      d.category !== "manual" &&
+      d.category !== "repair" &&
+      d.category !== "video_debug" &&
+      d.category !== "video_setup",
   );
 
   return (
@@ -195,6 +203,46 @@ export default async function EquipmentDetailPage({
         </section>
       )}
 
+      {/* ---- 调试视频 ---- */}
+      {byCategory(docs, "video_debug").length > 0 && (
+        <section className="mb-8">
+          <SectionTitle>调试视频</SectionTitle>
+          <div className="space-y-4">
+            {byCategory(docs, "video_debug").map((doc) => (
+              <div key={doc.id} className="rounded-md border p-3">
+                <Link
+                  href={`/document/${doc.id}`}
+                  className="font-medium hover:text-primary"
+                >
+                  {doc.title}
+                </Link>
+                <VideoPlayer document={doc} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ---- 设置视频 ---- */}
+      {byCategory(docs, "video_setup").length > 0 && (
+        <section className="mb-8">
+          <SectionTitle>设置视频</SectionTitle>
+          <div className="space-y-4">
+            {byCategory(docs, "video_setup").map((doc) => (
+              <div key={doc.id} className="rounded-md border p-3">
+                <Link
+                  href={`/document/${doc.id}`}
+                  className="font-medium hover:text-primary"
+                >
+                  {doc.title}
+                </Link>
+                <VideoPlayer document={doc} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ---- 相关资料（电气图纸/参数手册/软件资料/其他） ---- */}
       {relatedDocs.length > 0 && (
         <section className="mb-8">
@@ -228,6 +276,41 @@ export default async function EquipmentDetailPage({
           <p className="rounded-md border border-destructive/40 py-6 text-center text-sm text-destructive">
             维护信息加载失败
           </p>
+        )}
+      </section>
+
+      {/* ---- 维修文章（相关维修教程/操作指南/经验文章） ---- */}
+      <section className="mb-8">
+        <SectionTitle>维修文章</SectionTitle>
+        {articles === null ? (
+          <p className="rounded-md border border-destructive/40 py-6 text-center text-sm text-destructive">
+            文章加载失败
+          </p>
+        ) : articles.length === 0 ? (
+          <p className="rounded-md border border-dashed py-6 text-center text-sm text-muted-foreground">
+            暂无相关文章
+          </p>
+        ) : (
+          <ul className="divide-y rounded-md border">
+            {articles.map(({ article }) => (
+              <li key={article.id} className="px-4 py-3">
+                <Link
+                  href={`/articles/${article.slug}`}
+                  className="flex items-center justify-between gap-3 hover:text-primary"
+                >
+                  <span className="min-w-0 truncate font-medium">{article.title}</span>
+                  <Badge variant="outline" className="shrink-0">
+                    {ARTICLE_TYPE_LABELS[article.article_type] ?? article.article_type}
+                  </Badge>
+                </Link>
+                {article.summary && (
+                  <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                    {article.summary}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </main>
