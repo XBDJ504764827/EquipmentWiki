@@ -1,4 +1,11 @@
 //! Data models.
 //!
-//! Domain structs for equipment, manuals, images, repair knowledge and
-//! troubleshooting entries will be defined here in later stages.
+//! Domain structs for equipment, documents (files), faults and
+//! maintenance knowledge.
+
+pub mod api;
+pub mod document;
+pub mod equipment;
+pub mod fault;
+pub mod maintenance;
+pub mod search;

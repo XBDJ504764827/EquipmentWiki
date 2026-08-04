@@ -8,6 +8,7 @@ next-env.d.ts
 
 # ===================== Rust =====================
 target/
+backend/storage/
 
 # ===================== Environment =====================
 .env
