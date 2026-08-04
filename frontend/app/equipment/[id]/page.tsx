@@ -32,10 +32,10 @@ export async function generateMetadata({
 }: EquipmentDetailPageProps): Promise<Metadata> {
   const { id } = await params;
   try {
-    const equipment = await fetchEquipmentDetail(id);
+    const detail = await fetchEquipmentDetail(id);
     return {
-      title: `${equipment.name} (${equipment.model}) - EquipmentWiki`,
-      description: equipment.description,
+      title: `${detail.equipment.name} (${detail.equipment.model}) - EquipmentWiki`,
+      description: detail.equipment.description,
     };
   } catch {
     return { title: "设备详情 - EquipmentWiki" };
@@ -67,8 +67,9 @@ export default async function EquipmentDetailPage({
 }: EquipmentDetailPageProps) {
   const { id } = await params;
 
-  const equipment = await fetchEquipmentDetail(id).catch(() => null);
-  if (!equipment) notFound();
+  const detail = await fetchEquipmentDetail(id).catch(() => null);
+  if (!detail) notFound();
+  const equipment = detail.equipment;
 
   const [documents, faults, maintenance] = await Promise.all([
     fetchDocuments(id).catch(() => null),
@@ -109,8 +110,34 @@ export default async function EquipmentDetailPage({
         <CardHeader className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
             <CardTitle className="text-2xl">{equipment.name}</CardTitle>
-            <Badge>{equipment.category}</Badge>
+            {detail.category_name && <Badge>{detail.category_name}</Badge>}
           </div>
+          {/* 分类路径面包屑 */}
+          {detail.category_path.length > 0 && (
+            <nav aria-label="分类路径" className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
+              {detail.category_path.map((item, i) => (
+                <span key={item.id} className="flex items-center gap-1">
+                  {i > 0 && <span className="text-muted-foreground/60">&gt;</span>}
+                  <Link
+                    href={`/categories/${item.id}`}
+                    className="hover:text-primary hover:underline"
+                  >
+                    {item.name}
+                  </Link>
+                </span>
+              ))}
+            </nav>
+          )}
+          {/* 标签 */}
+          {detail.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {detail.tags.map((tag) => (
+                <Badge key={tag.id} variant="outline" className="text-xs">
+                  {tag.name}
+                </Badge>
+              ))}
+            </div>
+          )}
           <p className="text-sm text-muted-foreground">ID：{equipment.id}</p>
         </CardHeader>
 
@@ -132,7 +159,7 @@ export default async function EquipmentDetailPage({
             </div>
             <div>
               <dt className="text-sm text-muted-foreground">设备分类</dt>
-              <dd className="mt-0.5 font-medium">{equipment.category || "—"}</dd>
+              <dd className="mt-0.5 font-medium">{detail.category_name || "未分类"}</dd>
             </div>
             <div>
               <dt className="text-sm text-muted-foreground">更新时间</dt>

@@ -53,7 +53,7 @@ export function SearchResultView({ result }: SearchResultProps) {
         {equipment.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {equipment.map((eq) => (
-              <EquipmentCard key={eq.id} equipment={eq} />
+              <EquipmentCard key={eq.equipment.id} equipment={eq} />
             ))}
           </div>
         ) : (

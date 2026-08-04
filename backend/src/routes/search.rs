@@ -21,7 +21,7 @@ use serde::Deserialize;
 
 use crate::models::{
     api::{ApiOk, ApiResult},
-    equipment::Equipment,
+    equipment::EquipmentWithCategory,
     search::{DocumentHit, FaultHit, SearchResult},
 };
 use crate::routes::AppState;
@@ -81,14 +81,27 @@ pub async fn search(
     let pattern = format!("%{kw}%");
 
     // ---- 1. 设备搜索：名称/型号/厂家 ----
-    let equipment: Vec<Equipment> = if want(&search_type, "equipment") {
-        sqlx::query_as::<_, Equipment>(
-            "SELECT id, name, model, manufacturer, category, description, cover_image, created_at, updated_at
-             FROM equipment
-             WHERE (name ILIKE $1 OR model ILIKE $1 OR manufacturer ILIKE $1)
-               AND ($2 = '' OR category = $2)
-               AND ($3 = '' OR manufacturer = $3)
-             ORDER BY id DESC
+    let equipment: Vec<EquipmentWithCategory> = if want(&search_type, "equipment") {
+        sqlx::query_as::<_, EquipmentWithCategory>(
+            "SELECT e.id, e.name, e.model, e.manufacturer, e.category_id, e.description,
+                    e.cover_image, e.created_at, e.updated_at, c.name AS category_name
+             FROM equipment e
+             LEFT JOIN equipment_categories c ON c.id = e.category_id
+             WHERE (e.name ILIKE $1 OR e.model ILIKE $1 OR e.manufacturer ILIKE $1
+                    OR e.category_id IN (SELECT id FROM equipment_categories WHERE name ILIKE $1)
+                    OR e.id IN (SELECT et.equipment_id FROM equipment_tags et
+                                JOIN tags t ON t.id = et.tag_id WHERE t.name ILIKE $1))
+               AND ($2 = '' OR EXISTS (
+                    WITH RECURSIVE ancestors AS (
+                        SELECT id, name, parent_id FROM equipment_categories WHERE id = e.category_id
+                        UNION ALL
+                        SELECT c.id, c.name, c.parent_id
+                        FROM equipment_categories c JOIN ancestors a ON c.id = a.parent_id
+                    )
+                    SELECT 1 FROM ancestors WHERE name = $2
+               ))
+               AND ($3 = '' OR e.manufacturer = $3)
+             ORDER BY e.id DESC
              LIMIT $4",
         )
         .bind(&pattern)
@@ -110,8 +123,17 @@ pub async fn search(
                     d.created_at, d.updated_at, e.name AS equipment_name
              FROM documents d
              JOIN equipment e ON e.id = d.equipment_id
+             LEFT JOIN equipment_categories c ON c.id = e.category_id
              WHERE (d.title ILIKE $1 OR d.description ILIKE $1)
-               AND ($2 = '' OR e.category = $2)
+               AND ($2 = '' OR EXISTS (
+                    WITH RECURSIVE ancestors AS (
+                        SELECT id, name, parent_id FROM equipment_categories WHERE id = e.category_id
+                        UNION ALL
+                        SELECT c.id, c.name, c.parent_id
+                        FROM equipment_categories c JOIN ancestors a ON c.id = a.parent_id
+                    )
+                    SELECT 1 FROM ancestors WHERE name = $2
+               ))
                AND ($3 = '' OR e.manufacturer = $3)
              ORDER BY d.created_at DESC
              LIMIT $4",
@@ -134,8 +156,17 @@ pub async fn search(
                     e.name AS equipment_name
              FROM faults f
              JOIN equipment e ON e.id = f.equipment_id
+             LEFT JOIN equipment_categories c ON c.id = e.category_id
              WHERE (f.title ILIKE $1 OR f.symptom ILIKE $1 OR f.solution ILIKE $1)
-               AND ($2 = '' OR e.category = $2)
+               AND ($2 = '' OR EXISTS (
+                    WITH RECURSIVE ancestors AS (
+                        SELECT id, name, parent_id FROM equipment_categories WHERE id = e.category_id
+                        UNION ALL
+                        SELECT c.id, c.name, c.parent_id
+                        FROM equipment_categories c JOIN ancestors a ON c.id = a.parent_id
+                    )
+                    SELECT 1 FROM ancestors WHERE name = $2
+               ))
                AND ($3 = '' OR e.manufacturer = $3)
              ORDER BY f.created_at DESC
              LIMIT $4",

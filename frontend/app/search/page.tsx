@@ -44,13 +44,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   // 筛选选项：从当前设备结果中提取分类/厂家（并保留已选值）
   const categories = Array.from(
     new Set([
-      ...(result?.equipment.map((e) => e.category).filter(Boolean) ?? []),
+      ...(result?.equipment.map((e) => e.category_name).filter((v): v is string => !!v) ?? []),
       ...(category ? [category] : []),
     ]),
   );
   const manufacturers = Array.from(
     new Set([
-      ...(result?.equipment.map((e) => e.manufacturer).filter(Boolean) ?? []),
+      ...(result?.equipment.map((e) => e.equipment.manufacturer).filter((v): v is string => !!v) ?? []),
       ...(manufacturer ? [manufacturer] : []),
     ]),
   );

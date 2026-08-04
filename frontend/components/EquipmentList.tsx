@@ -33,7 +33,7 @@ export function EquipmentList({ data }: EquipmentListProps) {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((equipment) => (
-            <EquipmentCard key={equipment.id} equipment={equipment} />
+            <EquipmentCard key={equipment.equipment.id} equipment={equipment} />
           ))}
         </div>
       )}

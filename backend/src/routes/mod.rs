@@ -2,12 +2,14 @@
 //!
 //! Business endpoints: equipment, documents (files), faults, maintenance.
 
+pub mod categories;
 pub mod documents;
 pub mod equipment;
 pub mod faults;
 pub mod health;
 pub mod maintenance;
 pub mod search;
+pub mod tags;
 
 use std::sync::Arc;
 
@@ -46,6 +48,15 @@ pub fn app(state: AppState) -> Router {
         // ---- faults ----
         .route("/api/equipment/{id}/faults", get(faults::list_by_equipment))
         .route("/api/faults", axum::routing::post(faults::create))
+        // ---- categories ----
+        .route("/api/categories", get(categories::tree))
+        .route(
+            "/api/categories/{id}/equipment",
+            get(categories::equipment_by_category),
+        )
+        // ---- tags ----
+        .route("/api/tags", get(tags::list))
+        .route("/api/tags/{id}/equipment", get(tags::equipment_by_tag))
         // ---- search ----
         .route("/api/search", get(search::search))
         // ---- maintenance ----

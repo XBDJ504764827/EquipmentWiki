@@ -62,10 +62,10 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <Link
-        href={equipment ? `/equipment/${equipment.id}` : "/equipment"}
+        href={equipment ? `/equipment/${equipment.equipment.id}` : "/equipment"}
         className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "mb-4 -ml-2")}
       >
-        ← 返回{equipment ? ` ${equipment.name}` : "设备列表"}
+        ← 返回{equipment ? ` ${equipment.equipment.name}` : "设备列表"}
       </Link>
 
       {/* ---- 文件信息 ---- */}
@@ -85,8 +85,8 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
               <dt>设备：</dt>
               <dd>
                 {equipment ? (
-                  <Link href={`/equipment/${equipment.id}`} className="text-primary hover:underline">
-                    {equipment.name}（{equipment.model}）
+                  <Link href={`/equipment/${equipment.equipment.id}`} className="text-primary hover:underline">
+                    {equipment.equipment.name}（{equipment.equipment.model}）
                   </Link>
                 ) : (
                   `#${document.equipment_id}`

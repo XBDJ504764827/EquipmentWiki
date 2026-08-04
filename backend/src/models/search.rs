@@ -6,7 +6,7 @@
 use serde::Serialize;
 
 use super::document::Document;
-use super::equipment::Equipment;
+use super::equipment::EquipmentWithCategory;
 use super::fault::Fault;
 
 /// A document hit — document fields + parent equipment name.
@@ -30,8 +30,8 @@ pub struct FaultHit {
 /// Full search result payload.
 #[derive(Debug, Clone, Serialize)]
 pub struct SearchResult {
-    /// 设备匹配结果
-    pub equipment: Vec<Equipment>,
+    /// 设备匹配结果（含分类名）
+    pub equipment: Vec<EquipmentWithCategory>,
     /// 资料匹配结果
     pub documents: Vec<DocumentHit>,
     /// 故障匹配结果

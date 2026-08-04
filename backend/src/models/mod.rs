@@ -4,8 +4,10 @@
 //! maintenance knowledge.
 
 pub mod api;
+pub mod category;
 pub mod document;
 pub mod equipment;
 pub mod fault;
 pub mod maintenance;
 pub mod search;
+pub mod tag;
