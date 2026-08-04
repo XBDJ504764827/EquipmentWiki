@@ -21,7 +21,7 @@ export function DocumentViewer({ document }: DocumentViewerProps) {
       <iframe
         src={file_url}
         title={title}
-        className="h-[480px] w-full rounded-md border bg-white"
+        className="h-[480px] w-full rounded-md border bg-muted/20"
       />
     );
   }
@@ -32,7 +32,7 @@ export function DocumentViewer({ document }: DocumentViewerProps) {
       <img
         src={file_url}
         alt={title}
-        className="max-h-[480px] w-auto max-w-full rounded-md border bg-white"
+        className="max-h-[480px] w-auto max-w-full rounded-md border bg-muted/20"
       />
     );
   }

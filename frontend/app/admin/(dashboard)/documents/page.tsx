@@ -209,7 +209,7 @@ export default function AdminDocumentsPage() {
         </div>
 
         {listEquipmentId && (
-          <div className="rounded-md border">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>

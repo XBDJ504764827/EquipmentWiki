@@ -1,21 +1,10 @@
+import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { EquipmentCard } from "@/components/EquipmentCard";
 import { SearchResultCard } from "@/components/SearchResultCard";
 import { ARTICLE_TYPE_LABELS, CATEGORY_LABELS, type SearchResult } from "@/lib/api";
 
 interface SearchResultProps {
   result: SearchResult;
-}
-
-/** 区块标题：分类名 + 命中数量 */
-function SectionHeading({ title, count }: { title: string; count: number }) {
-  return (
-    <h2 className="mb-3 border-l-4 border-primary pl-3 text-lg font-semibold">
-      {title}
-      <span className="ml-2 text-sm font-normal text-muted-foreground">
-        {count} 条
-      </span>
-    </h2>
-  );
 }
 
 /** 空区块占位 */
@@ -50,8 +39,7 @@ export function SearchResultView({ result }: SearchResultProps) {
   return (
     <div className="space-y-8">
       {/* ---- 设备结果 ---- */}
-      <section>
-        <SectionHeading title="设备" count={equipment.length} />
+      <CollapsibleSection title="设备" count={equipment.length} id="res-equipment">
         {equipment.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {equipment.map((eq) => (
@@ -61,11 +49,10 @@ export function SearchResultView({ result }: SearchResultProps) {
         ) : (
           <EmptyHint text="未找到匹配设备" />
         )}
-      </section>
+      </CollapsibleSection>
 
       {/* ---- 文档结果 ---- */}
-      <section>
-        <SectionHeading title="文档" count={documents.length} />
+      <CollapsibleSection title="文档" count={documents.length} id="res-documents">
         {documents.length > 0 ? (
           <ul className="divide-y rounded-md border">
             {documents.map(({ document, equipment_name, snippet }) => (
@@ -87,11 +74,10 @@ export function SearchResultView({ result }: SearchResultProps) {
         ) : (
           <EmptyHint text="未找到匹配资料" />
         )}
-      </section>
+      </CollapsibleSection>
 
       {/* ---- 故障结果 ---- */}
-      <section>
-        <SectionHeading title="故障" count={faults.length} />
+      <CollapsibleSection title="故障" count={faults.length} id="res-faults">
         {faults.length > 0 ? (
           <ul className="divide-y rounded-md border">
             {faults.map(({ fault, equipment_name, snippet }) => (
@@ -109,11 +95,10 @@ export function SearchResultView({ result }: SearchResultProps) {
         ) : (
           <EmptyHint text="未找到匹配故障" />
         )}
-      </section>
+      </CollapsibleSection>
 
       {/* ---- 文章结果 ---- */}
-      <section>
-        <SectionHeading title="文章" count={articles.length} />
+      <CollapsibleSection title="文章" count={articles.length} id="res-articles">
         {articles.length > 0 ? (
           <ul className="divide-y rounded-md border">
             {articles.map(({ article, equipment_name, snippet }) => (
@@ -131,7 +116,7 @@ export function SearchResultView({ result }: SearchResultProps) {
         ) : (
           <EmptyHint text="未找到匹配文章" />
         )}
-      </section>
+      </CollapsibleSection>
     </div>
   );
 }
