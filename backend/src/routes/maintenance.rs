@@ -5,8 +5,8 @@
 //! - `GET /api/equipment/{id}/maintenance`   list maintenance items of an equipment
 
 use axum::{
-    extract::{Path, State},
     Json,
+    extract::{Path, State},
 };
 
 use crate::models::{

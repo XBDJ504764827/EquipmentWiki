@@ -11,10 +11,7 @@ pub mod search;
 
 use std::sync::Arc;
 
-use axum::{
-    routing::get,
-    Router,
-};
+use axum::{Router, routing::get};
 use sqlx::PgPool;
 
 use crate::services::storage::Storage;
@@ -44,16 +41,10 @@ pub fn app(state: AppState) -> Router {
             get(documents::list_by_equipment),
         )
         .route("/api/documents/{id}", get(documents::detail))
-        .route(
-            "/api/documents/{id}/download",
-            get(documents::download),
-        )
+        .route("/api/documents/{id}/download", get(documents::download))
         .route("/api/documents", axum::routing::post(documents::upload))
         // ---- faults ----
-        .route(
-            "/api/equipment/{id}/faults",
-            get(faults::list_by_equipment),
-        )
+        .route("/api/equipment/{id}/faults", get(faults::list_by_equipment))
         .route("/api/faults", axum::routing::post(faults::create))
         // ---- search ----
         .route("/api/search", get(search::search))

@@ -6,9 +6,9 @@
 //! - `POST /api/faults`                  create a fault (testing)
 
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 
 use crate::models::{

@@ -3,7 +3,7 @@
 //! `GET /api/search?keyword=&category=&manufacturer=&type=`
 //!
 //! - `keyword`     搜索关键词，匹配设备名称/型号/厂家、资料标题/描述、
-//!                 故障标题/现象/解决方案（ILIKE 模糊匹配）
+//!   故障标题/现象/解决方案（ILIKE 模糊匹配）
 //! - `category`    按设备分类过滤（如"金属加工"）
 //! - `manufacturer` 按制造商过滤
 //! - `type`        限定搜索范围：equipment | documents | faults（不传=全部）
@@ -14,8 +14,8 @@
 //! ```
 
 use axum::{
-    extract::{Query, State},
     Json,
+    extract::{Query, State},
 };
 use serde::Deserialize;
 

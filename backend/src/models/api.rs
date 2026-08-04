@@ -11,9 +11,9 @@
 //! ```
 
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde::Serialize;
 
@@ -58,12 +58,8 @@ pub enum AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, error, message) = match self {
-            AppError::BadRequest(msg) => {
-                (StatusCode::BAD_REQUEST, "bad_request".to_string(), msg)
-            }
-            AppError::NotFound(msg) => {
-                (StatusCode::NOT_FOUND, "not_found".to_string(), msg)
-            }
+            AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, "bad_request".to_string(), msg),
+            AppError::NotFound(msg) => (StatusCode::NOT_FOUND, "not_found".to_string(), msg),
             AppError::Database(err) => {
                 eprintln!("[error] database: {err}");
                 (

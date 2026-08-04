@@ -9,8 +9,7 @@ use crate::config::Config;
 
 /// Path to the migration files, relative to the crate manifest dir
 /// (`backend/`), i.e. the repo-root `database/migrations/` directory.
-const MIGRATIONS_DIR: &str =
-    concat!(env!("CARGO_MANIFEST_DIR"), "/../database/migrations");
+const MIGRATIONS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../database/migrations");
 
 /// Create a PostgreSQL connection pool from the application config.
 pub async fn connect(config: &Config) -> Result<PgPool, sqlx::Error> {

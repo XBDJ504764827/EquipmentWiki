@@ -7,9 +7,9 @@
 //! - `POST /api/equipment`        create equipment (temporary, for testing)
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
-    Json,
 };
 use serde::Deserialize;
 

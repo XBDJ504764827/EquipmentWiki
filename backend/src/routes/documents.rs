@@ -11,10 +11,10 @@
 //! (local filesystem for now) and served at `/files/...`.
 
 use axum::{
-    extract::{Multipart, Path, State},
-    http::{header, StatusCode},
-    response::{IntoResponse, Response},
     Json,
+    extract::{Multipart, Path, State},
+    http::{StatusCode, header},
+    response::{IntoResponse, Response},
 };
 
 use crate::models::{
@@ -72,10 +72,7 @@ pub async fn detail(
 ///
 /// 原子地使 `download_count` +1，然后以附件方式返回文件字节
 /// （`Content-Disposition: attachment`，浏览器直接下载）。
-pub async fn download(
-    State(state): State<AppState>,
-    Path(id): Path<i64>,
-) -> ApiResult<Response> {
+pub async fn download(State(state): State<AppState>, Path(id): Path<i64>) -> ApiResult<Response> {
     // 1. 读取文档记录
     let document: Option<Document> = sqlx::query_as::<_, Document>(
         "SELECT id, equipment_id, title, description, file_url, file_type, category, \
@@ -89,7 +86,8 @@ pub async fn download(
     .await
     .map_err(AppError::Database)?;
 
-    let document = document.ok_or_else(|| AppError::NotFound(format!("document {id} not found")))?;
+    let document =
+        document.ok_or_else(|| AppError::NotFound(format!("document {id} not found")))?;
 
     // 2. 下载计数 +1
     sqlx::query("UPDATE documents SET download_count = download_count + 1 WHERE id = $1")
@@ -122,7 +120,10 @@ pub async fn download(
             (header::CONTENT_TYPE, content_type.to_string()),
             (
                 header::CONTENT_DISPOSITION,
-                format!("attachment; filename=\"{file_name}.{}\"", document.file_type),
+                format!(
+                    "attachment; filename=\"{file_name}.{}\"",
+                    document.file_type
+                ),
             ),
             (header::CONTENT_LENGTH, bytes.len().to_string()),
         ],
@@ -156,9 +157,11 @@ pub async fn upload(
     let mut file_mime = String::new();
 
     // Parse multipart fields (order is not guaranteed).
-    while let Some(field) = multipart.next_field().await.map_err(|e| {
-        AppError::BadRequest(format!("invalid multipart data: {e}"))
-    })? {
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|e| AppError::BadRequest(format!("invalid multipart data: {e}")))?
+    {
         let name = field.name().unwrap_or("").to_string();
         match name.as_str() {
             "equipment_id" => {
@@ -173,9 +176,13 @@ pub async fn upload(
             "file" => {
                 file_name = field.file_name().map(|s| s.to_string());
                 file_mime = field.content_type().unwrap_or("").to_string();
-                file_bytes = Some(field.bytes().await.map_err(|e| {
-                    AppError::BadRequest(format!("failed to read file: {e}"))
-                })?.to_vec());
+                file_bytes = Some(
+                    field
+                        .bytes()
+                        .await
+                        .map_err(|e| AppError::BadRequest(format!("failed to read file: {e}")))?
+                        .to_vec(),
+                );
             }
             _ => {}
         }
@@ -202,7 +209,9 @@ pub async fn upload(
         .await
         .map_err(AppError::Database)?;
     if !exists {
-        return Err(AppError::NotFound(format!("equipment {equipment_id} not found")));
+        return Err(AppError::NotFound(format!(
+            "equipment {equipment_id} not found"
+        )));
     }
 
     // Store the file through the storage abstraction.

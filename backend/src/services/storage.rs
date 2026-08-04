@@ -133,9 +133,19 @@ pub fn sanitize_file_name(name: &str) -> String {
     let name = name.rsplit(['/', '\\']).next().unwrap_or(name);
     let safe: String = name
         .chars()
-        .map(|c| if c.is_alphanumeric() || c == '.' || c == '-' || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '.' || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
-    if safe.is_empty() { "file".to_string() } else { safe }
+    if safe.is_empty() {
+        "file".to_string()
+    } else {
+        safe
+    }
 }
 
 /// Map a MIME type / file extension to the `file_type` stored on documents.

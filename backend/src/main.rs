@@ -27,9 +27,8 @@ async fn main() {
     // Local file storage for uploaded documents (dev/testing).
     // Later stages can swap in a Cloudflare R2 backend via the Storage trait.
     let storage_dir = config.storage_dir;
-    let storage = Arc::new(
-        LocalStorage::new(&storage_dir, "/files").expect("failed to init local storage"),
-    );
+    let storage =
+        Arc::new(LocalStorage::new(&storage_dir, "/files").expect("failed to init local storage"));
 
     let listener = TcpListener::bind(&config.server_addr)
         .await
