@@ -15,6 +15,9 @@ pub struct Config {
     pub r2_bucket: String,
     /// Local directory for uploaded files (dev/testing).
     pub storage_dir: String,
+    /// 后台管理 API 访问令牌（Bearer 认证）。
+    /// 第一阶段简单保护；未来可替换为 JWT 管理员账号。
+    pub admin_token: Option<String>,
 }
 
 impl Config {
@@ -33,6 +36,7 @@ impl Config {
             r2_secret_key: env::var("R2_SECRET_KEY")?,
             r2_bucket: env::var("R2_BUCKET")?,
             storage_dir: env::var("STORAGE_DIR").unwrap_or_else(|_| "./storage".to_string()),
+            admin_token: env::var("ADMIN_TOKEN").ok().filter(|t| !t.is_empty()),
         })
     }
 }

@@ -27,8 +27,8 @@ export function DocumentViewer({ document }: DocumentViewerProps) {
   }
 
   if (preview_type === "image") {
-    // eslint-disable-next-line @next/next/no-img-element
     return (
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={file_url}
         alt={title}

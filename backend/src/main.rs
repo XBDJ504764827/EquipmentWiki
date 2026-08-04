@@ -6,8 +6,10 @@ mod services;
 
 use std::sync::Arc;
 
+use axum::http::{Method, header};
 use axum::serve;
 use tokio::net::TcpListener;
+use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 
 use services::storage::LocalStorage;
@@ -36,9 +38,26 @@ async fn main() {
     println!("EquipmentWiki API listening on {}", config.server_addr);
     println!("Local storage: {storage_dir}");
 
-    let app = routes::app(routes::AppState { pool, storage })
-        // Serve uploaded files at /files/...
-        .nest_service("/files", ServeDir::new(storage_dir));
+    // CORS：公开知识库，允许所有来源；管理 API 需要 Authorization/Content-Type 头
+    let cors = CorsLayer::new()
+        .allow_origin(tower_http::cors::Any)
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
+        .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE]);
+
+    let app = routes::app(routes::AppState {
+        pool,
+        storage,
+        admin_token: config.admin_token.clone(),
+    })
+    .layer(cors)
+    // Serve uploaded files at /files/...
+    .nest_service("/files", ServeDir::new(storage_dir));
 
     serve(listener, app).await.expect("server error");
 }
