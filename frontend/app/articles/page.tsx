@@ -83,29 +83,36 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
             <ul className="divide-y rounded-md border">
               {data?.items.map(({ article, equipment_name }) => (
                 <li key={article.id} className="px-4 py-4">
-                  <Link href={`/articles/${article.slug}`} className="block hover:text-primary">
+                  {/* 标题：独立链接（避免 <a> 嵌套） */}
+                  <Link
+                    href={`/articles/${article.slug}`}
+                    className="inline-block hover:text-primary"
+                  >
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-lg font-semibold">{article.title}</h2>
                       <Badge>{ARTICLE_TYPE_LABELS[article.article_type] ?? article.article_type}</Badge>
                     </div>
-                    {article.summary && (
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                        {article.summary}
-                      </p>
-                    )}
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      关联设备：
-                      {equipment_name ? (
-                        <Link href={`/equipment/${article.equipment_id}`} className="text-primary hover:underline">
-                          {equipment_name}
-                        </Link>
-                      ) : (
-                        "通用"
-                      )}
-                      {" · "}
-                      {new Date(article.updated_at).toLocaleDateString("zh-CN")}
-                    </p>
                   </Link>
+                  {article.summary && (
+                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                      {article.summary}
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    关联设备：
+                    {equipment_name && article.equipment_id ? (
+                      <Link
+                        href={`/equipment/${article.equipment_id}`}
+                        className="text-primary hover:underline"
+                      >
+                        {equipment_name}
+                      </Link>
+                    ) : (
+                      "通用"
+                    )}
+                    {" · "}
+                    {new Date(article.updated_at).toLocaleDateString("zh-CN")}
+                  </p>
                 </li>
               ))}
             </ul>

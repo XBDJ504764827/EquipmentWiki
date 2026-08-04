@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AccordionPanel } from "@/components/AccordionPanel";
 import { DocumentList } from "@/components/DocumentList";
 import { FaultList } from "@/components/FaultList";
 import { FileCard } from "@/components/FileCard";
@@ -42,15 +43,6 @@ export async function generateMetadata({
   } catch {
     return { title: "设备详情 - EquipmentWiki" };
   }
-}
-
-/** 详情区块的统一标题 */
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="mb-3 border-l-4 border-primary pl-3 text-lg font-semibold">
-      {children}
-    </h2>
-  );
 }
 
 /**
@@ -182,135 +174,137 @@ export default async function EquipmentDetailPage({
         </CardContent>
       </Card>
 
-      {/* ---- 资料中心（文档/图片/视频/文件） ---- */}
-      <section className="mb-8">
-        <SectionTitle>资料中心</SectionTitle>
-        {pdfDocs.length === 0 &&
-        videoDocs.length === 0 &&
-        fileDocs.length === 0 &&
-        mediaGalleryImages.length <= 1 ? (
-          <p className="rounded-md border border-dashed py-6 text-center text-sm text-muted-foreground">
-            暂无资料
-          </p>
-        ) : (
-          <div className="space-y-6">
-            {/* 📄 文档（PDF 说明书/维修手册/参数手册等） */}
-            {pdfDocs.length > 0 && (
-              <div>
-                <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-                  📄 文档<span className="text-xs font-normal">（{pdfDocs.length}）</span>
-                </h3>
-                <DocumentList documents={pdfDocs} />
-              </div>
+      {/* ---- 快速操作按钮（仅显示有内容的入口） ---- */}
+      <div className="mb-6 grid grid-cols-3 gap-2">
+        {pdfDocs.length > 0 && (
+          <a
+            href="#docs"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "flex h-auto flex-col gap-0.5 py-2.5 text-xs",
             )}
-
-            {/* 🖼 图片（封面 + 图片集合） */}
-            {mediaGalleryImages.length > 1 && (
-              <div>
-                <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-                  🖼 图片<span className="text-xs font-normal">（{mediaGalleryImages.length}）</span>
-                </h3>
-                <MediaGallery images={mediaGalleryImages} />
-              </div>
+          >
+            <span className="text-base">📄</span>
+            查看说明书
+          </a>
+        )}
+        {faults && faults.length > 0 && (
+          <a
+            href="#faults"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "flex h-auto flex-col gap-0.5 py-2.5 text-xs",
             )}
+          >
+            <span className="text-base">⚠️</span>
+            查看故障
+          </a>
+        )}
+        {articles && articles.length > 0 && (
+          <a
+            href="#articles"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "flex h-auto flex-col gap-0.5 py-2.5 text-xs",
+            )}
+          >
+            <span className="text-base">🔧</span>
+            维修教程
+          </a>
+        )}
+      </div>
 
-            {/* 🎬 视频（调试/设置视频说明书） */}
-            {videoDocs.length > 0 && (
-              <div>
-                <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-                  🎬 视频<span className="text-xs font-normal">（{videoDocs.length}）</span>
-                </h3>
-                <div className="space-y-4">
-                  {videoDocs.map((doc) => (
-                    <div key={doc.id} className="rounded-md border p-3">
-                      <Link
-                        href={`/document/${doc.id}`}
-                        className="font-medium hover:text-primary"
-                      >
-                        {doc.title}
-                      </Link>
-                      <VideoPlayer document={doc} />
-                    </div>
-                  ))}
+      {/* ---- 资料区域（折叠面板） ---- */}
+      <div className="space-y-3">
+        {pdfDocs.length > 0 && (
+          <AccordionPanel title={`📄 说明书（${pdfDocs.length}）`} defaultOpen id="docs">
+            <DocumentList documents={pdfDocs} />
+          </AccordionPanel>
+        )}
+
+        {mediaGalleryImages.length > 1 && (
+          <AccordionPanel title={`🖼 图片（${mediaGalleryImages.length}）`} id="images">
+            <MediaGallery images={mediaGalleryImages} />
+          </AccordionPanel>
+        )}
+
+        {videoDocs.length > 0 && (
+          <AccordionPanel title={`🎬 视频（${videoDocs.length}）`} id="videos">
+            <div className="space-y-4">
+              {videoDocs.map((doc) => (
+                <div key={doc.id} className="rounded-md border p-3">
+                  <Link
+                    href={`/document/${doc.id}`}
+                    className="font-medium hover:text-primary"
+                  >
+                    {doc.title}
+                  </Link>
+                  <VideoPlayer document={doc} />
                 </div>
-              </div>
+              ))}
+            </div>
+          </AccordionPanel>
+        )}
+
+        {fileDocs.length > 0 && (
+          <AccordionPanel title={`📦 文件（${fileDocs.length}）`} id="files">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {fileDocs.map((doc) => (
+                <FileCard key={doc.id} document={doc} />
+              ))}
+            </div>
+          </AccordionPanel>
+        )}
+
+        {faults !== null && (
+          <AccordionPanel title={`⚠️ 故障方案（${faults.length}）`} defaultOpen={faults.length > 0} id="faults">
+            {faults.length > 0 ? (
+              <FaultList faults={faults} />
+            ) : (
+              <p className="text-center text-sm text-muted-foreground">暂无故障记录</p>
             )}
+          </AccordionPanel>
+        )}
 
-            {/* 📦 文件（CAD/软件/压缩包等） */}
-            {fileDocs.length > 0 && (
-              <div>
-                <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-                  📦 文件<span className="text-xs font-normal">（{fileDocs.length}）</span>
-                </h3>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  {fileDocs.map((doc) => (
-                    <FileCard key={doc.id} document={doc} />
-                  ))}
-                </div>
-              </div>
+        {maintenance !== null && (
+          <AccordionPanel title={`维护周期（${maintenance.length}）`} id="maintenance">
+            {maintenance.length > 0 ? (
+              <MaintenanceList items={maintenance} />
+            ) : (
+              <p className="text-center text-sm text-muted-foreground">暂无维护说明</p>
             )}
-          </div>
+          </AccordionPanel>
         )}
-      </section>
 
-      {/* ---- 故障知识 ---- */}
-      <section className="mb-8">
-        <SectionTitle>常见故障</SectionTitle>
-        {faults ? (
-          <FaultList faults={faults} />
-        ) : (
-          <p className="rounded-md border border-destructive/40 py-6 text-center text-sm text-destructive">
-            故障信息加载失败
-          </p>
+        {articles !== null && (
+          <AccordionPanel title={`🔧 维修文章（${articles.length}）`} defaultOpen={articles.length > 0} id="articles">
+            {articles.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground">暂无相关文章</p>
+            ) : (
+              <ul className="divide-y rounded-md border">
+                {articles.map(({ article }) => (
+                  <li key={article.id} className="px-4 py-3">
+                    <Link
+                      href={`/articles/${article.slug}`}
+                      className="flex items-center justify-between gap-3 hover:text-primary"
+                    >
+                      <span className="min-w-0 truncate font-medium">{article.title}</span>
+                      <Badge variant="outline" className="shrink-0">
+                        {ARTICLE_TYPE_LABELS[article.article_type] ?? article.article_type}
+                      </Badge>
+                    </Link>
+                    {article.summary && (
+                      <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                        {article.summary}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </AccordionPanel>
         )}
-      </section>
-
-      {/* ---- 维护周期 ---- */}
-      <section className="mb-8">
-        <SectionTitle>维护周期</SectionTitle>
-        {maintenance ? (
-          <MaintenanceList items={maintenance} />
-        ) : (
-          <p className="rounded-md border border-destructive/40 py-6 text-center text-sm text-destructive">
-            维护信息加载失败
-          </p>
-        )}
-      </section>
-
-      {/* ---- 维修文章（相关维修教程/操作指南/经验文章） ---- */}
-      <section className="mb-8">
-        <SectionTitle>维修文章</SectionTitle>
-        {articles === null ? (
-          <p className="rounded-md border border-destructive/40 py-6 text-center text-sm text-destructive">
-            文章加载失败
-          </p>
-        ) : articles.length === 0 ? (
-          <p className="rounded-md border border-dashed py-6 text-center text-sm text-muted-foreground">
-            暂无相关文章
-          </p>
-        ) : (
-          <ul className="divide-y rounded-md border">
-            {articles.map(({ article }) => (
-              <li key={article.id} className="px-4 py-3">
-                <Link
-                  href={`/articles/${article.slug}`}
-                  className="flex items-center justify-between gap-3 hover:text-primary"
-                >
-                  <span className="min-w-0 truncate font-medium">{article.title}</span>
-                  <Badge variant="outline" className="shrink-0">
-                    {ARTICLE_TYPE_LABELS[article.article_type] ?? article.article_type}
-                  </Badge>
-                </Link>
-                {article.summary && (
-                  <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-                    {article.summary}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      </div>
     </main>
   );
 }

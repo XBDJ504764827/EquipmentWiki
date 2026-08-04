@@ -127,14 +127,28 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
       </div>
 
       {/* ---- 在线查看器 ---- */}
-      <div className="overflow-hidden rounded-lg border bg-white">
+      <div className="overflow-hidden rounded-lg border bg-background">
         {isPdf ? (
-          // 浏览器原生 PDF 查看器：稳定、无需第三方组件
-          <iframe
-            src={document.file_url}
-            title={document.title}
-            className="h-[70vh] w-full"
-          />
+          <div className="flex flex-col">
+            {/* 移动端 PDF：全屏查看入口（浏览器原生阅读器，支持横屏/缩放） */}
+            <div className="flex items-center justify-between border-b bg-muted/20 px-3 py-2 text-sm">
+              <span className="text-muted-foreground">PDF 文档</span>
+              <a
+                href={document.file_url}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-primary hover:underline"
+              >
+                全屏查看 ↗
+              </a>
+            </div>
+            {/* 浏览器原生 PDF 查看器：稳定、无需第三方组件；移动端用视口高度便于上下滑动 */}
+            <iframe
+              src={document.file_url}
+              title={document.title}
+              className="h-[75dvh] min-h-[480px] w-full"
+            />
+          </div>
         ) : document.file_type === "mp4" || document.file_type === "webm" ? (
           // 视频说明书：HTML5 原生播放
           <div className="p-4">

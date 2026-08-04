@@ -178,3 +178,124 @@
 .markdown-body hr { margin: 1.5em 0; border-color: hsl(var(--border)); }
 .markdown-body img { max-width: 100%; border-radius: 0.5rem; }
 .markdown-body a { color: hsl(var(--primary)); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ===================== 移动端适配（工业知识库，320-430px） ===================== */
+
+/* 移动端基础字号与间距 */
+@media (max-width: 430px) {
+  html {
+    font-size: 15px;
+  }
+  .markdown-body {
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+  /* 文章正文标题层级适配手机 */
+  .markdown-body h1 { font-size: 1.35rem; }
+  .markdown-body h2 { font-size: 1.15rem; }
+  .markdown-body h3 { font-size: 1.05rem; }
+  /* 表格横向滚动容器（由 MarkdownRenderer 包裹） */
+  .markdown-body table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* 表格横向滚动（桌面端也兜底） */
+.markdown-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 代码块移动端触控滚动 */
+.markdown-body pre {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 防底部导航遮挡：正文内容底部留白 */
+main {
+  scroll-padding-bottom: 4.5rem;
+}
+
+/* ===================== 点击反馈（全局） ===================== */
+/* 按下时立即反馈：轻微变淡 + 微缩放；松手恢复 */
+a:active,
+button:active,
+[role="button"]:active {
+  opacity: 0.72;
+  transition: opacity 0.08s ease;
+}
+@media (min-width: 430px) {
+  a:active,
+  button:active,
+  [role="button"]:active {
+    transform: scale(0.985);
+  }
+}
+
+/* 链接悬停反馈（桌面端） */
+@media (hover: hover) {
+  a:hover,
+  button:hover {
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      opacity 0.08s ease;
+  }
+}
+
+/* 移动端点击反馈：按下时显示半透明高亮（替代被移除的默认高亮） */
+@media (max-width: 430px) {
+  a, button {
+    -webkit-tap-highlight-color: rgba(30, 64, 175, 0.18);
+  }
+}
+
+/* 设备卡片移动端：图片比例更紧凑 */
+@media (max-width: 430px) {
+  .card-cover {
+    height: 8rem;
+  }
+}
+
+/* ===================== Dark 模式适配 ===================== */
+/* Markdown 代码块/表格/引用（原为浅色硬编码） */
+.dark .markdown-body pre {
+  background: oklch(0.205 0 0);
+  border-color: oklch(1 0 0 / 10%);
+}
+.dark .markdown-body code {
+  background: oklch(0.269 0 0);
+  color: oklch(0.922 0 0);
+}
+.dark .markdown-body pre code {
+  background: transparent;
+}
+.dark .markdown-body th {
+  background: oklch(0.269 0 0 / 0.5);
+}
+.dark .markdown-body tr:nth-child(even) td {
+  background: oklch(0.269 0 0 / 0.2);
+}
+.dark .markdown-body blockquote {
+  background: oklch(0.269 0 0 / 0.4);
+}
+.dark .markdown-body hr {
+  border-color: oklch(1 0 0 / 10%);
+}
+/* highlight.js 代码高亮在深色背景下的基础配色 */
+.dark .markdown-body pre code.hljs {
+  color: oklch(0.922 0 0);
+}
+.dark .markdown-body .hljs-keyword,
+.dark .markdown-body .hljs-selector-tag,
+.dark .markdown-body .hljs-literal { color: #c792ea; }
+.dark .markdown-body .hljs-string,
+.dark .markdown-body .hljs-regexp { color: #c3e88d; }
+.dark .markdown-body .hljs-number,
+.dark .markdown-body .hljs-title { color: #f78c6c; }
+.dark .markdown-body .hljs-comment { color: #75809a; }
+.dark .markdown-body .hljs-attr,
+.dark .markdown-body .hljs-variable { color: #82aaff; }

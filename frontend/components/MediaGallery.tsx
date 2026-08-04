@@ -18,6 +18,13 @@ interface MediaGalleryProps {
  */
 export function MediaGallery({ images }: MediaGalleryProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [zoom, setZoom] = useState(1);
+
+  // 打开全屏时重置缩放
+  const openAt = (i: number) => {
+    setZoom(1);
+    setActiveIndex(i);
+  };
 
   if (images.length === 0) {
     return (
@@ -40,7 +47,7 @@ export function MediaGallery({ images }: MediaGalleryProps) {
           <button
             key={img.url}
             type="button"
-            onClick={() => setActiveIndex(i)}
+            onClick={() => openAt(i)}
             className="group relative aspect-square overflow-hidden rounded-md border bg-muted/40 transition-colors hover:border-primary"
             aria-label={`查看图片 ${img.alt}`}
           >
@@ -84,11 +91,38 @@ export function MediaGallery({ images }: MediaGalleryProps) {
             </button>
           )}
 
+          {/* 缩放控制（移动端：查看接线图/电路图细节） */}
+          <div className="absolute bottom-16 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-white/10 px-2 py-1">
+            <button
+              type="button"
+              className="px-2 text-lg text-white hover:bg-white/20"
+              onClick={(e) => {
+                e.stopPropagation();
+                setZoom((z) => Math.max(1, z - 0.5));
+              }}
+            >
+              −
+            </button>
+            <span className="w-10 text-center text-xs text-white/80">{Math.round(zoom * 100)}%</span>
+            <button
+              type="button"
+              className="px-2 text-lg text-white hover:bg-white/20"
+              onClick={(e) => {
+                e.stopPropagation();
+                setZoom((z) => Math.min(3, z + 0.5));
+              }}
+            >
+              +
+            </button>
+          </div>
+
+          {/* 大图（缩放后支持触摸平移） */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={images[activeIndex].url}
             alt={images[activeIndex].alt}
-            className="max-h-full max-w-full object-contain"
+            style={{ transform: `scale(${zoom})` }}
+            className="max-h-full max-w-full touch-pan-x touch-pan-y object-contain transition-transform duration-200"
             onClick={(e) => e.stopPropagation()}
           />
 
