@@ -14,7 +14,6 @@ export const metadata: Metadata = {
 interface SearchPageProps {
   searchParams: Promise<{
     keyword?: string;
-    category?: string;
     manufacturer?: string;
     tag?: string;
     type?: string;
@@ -29,7 +28,6 @@ interface SearchPageProps {
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const keyword = params.keyword ?? "";
-  const category = params.category ?? "";
   const manufacturer = params.manufacturer ?? "";
   const tag = params.tag ?? "";
 
@@ -38,19 +36,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   if (keyword.trim()) {
     try {
-      result = await fetchSearch({ keyword, category, manufacturer, tag, type: params.type });
+      result = await fetchSearch({ keyword, manufacturer, tag, type: params.type });
     } catch (err) {
       error = err instanceof ApiError ? err.message : "搜索失败，请稍后重试";
     }
   }
 
-  // 筛选选项：分类/厂家从结果设备提取；标签用全量标签列表
-  const categories = Array.from(
-    new Set([
-      ...(result?.equipment.map((e) => e.category_name).filter((v): v is string => !!v) ?? []),
-      ...(category ? [category] : []),
-    ]),
-  );
+  // 筛选选项：厂家从结果设备提取；标签用全量标签列表
   const manufacturers = Array.from(
     new Set([
       ...(result?.equipment.map((e) => e.equipment.manufacturer).filter((v): v is string => !!v) ?? []),
@@ -63,7 +55,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const tags = Array.from(new Set([...allTags, ...(tag ? [tag] : [])]));
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:py-8">
       {/* 搜索框 */}
       <div className="mb-4 flex flex-col items-center gap-3">
         <h1 className="text-2xl font-bold tracking-tight">设备知识搜索</h1>
@@ -76,10 +68,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         <div className="mb-6">
           <SearchFilter
             keyword={keyword}
-            categories={categories}
             manufacturers={manufacturers}
             tags={tags}
-            initialCategory={category}
             initialManufacturer={manufacturer}
             initialTag={tag}
           />
@@ -88,13 +78,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
       {/* 结果 */}
       {error ? (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/5 py-16 text-center text-destructive">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/5 py-10 lg:py-16 text-center text-destructive">
           {error}
         </div>
       ) : keyword.trim() && result ? (
         <SearchResultView result={result} />
       ) : (
-        <div className="rounded-lg border border-dashed py-16 text-center text-muted-foreground">
+        <div className="rounded-lg border border-dashed py-10 lg:py-16 text-center text-muted-foreground">
           输入关键词搜索设备、资料、故障与维修文章
         </div>
       )}

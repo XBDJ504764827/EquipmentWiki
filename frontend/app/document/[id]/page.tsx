@@ -61,7 +61,7 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
   const isPdf = document.file_type === "pdf";
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-4xl px-4 py-5 sm:px-6 lg:py-8">
       <Link
         href={equipment ? `/equipment/${equipment.equipment.id}` : "/equipment"}
         className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "mb-4 -ml-2")}
@@ -81,7 +81,7 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
             <p className="mt-2 text-sm text-muted-foreground">{document.description}</p>
           )}
           {/* 元信息 */}
-          <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
+          <dl className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground lg:gap-x-6">
             <div className="flex gap-1">
               <dt>设备：</dt>
               <dd>

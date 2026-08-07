@@ -51,7 +51,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     : [];
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-3xl px-4 py-5 sm:px-6 lg:py-8">
       <Link
         href="/articles"
         className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "mb-4 -ml-2")}

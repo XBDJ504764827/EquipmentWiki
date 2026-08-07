@@ -99,7 +99,7 @@ export default async function EquipmentDetailPage({
   ];
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-4xl px-4 py-5 sm:px-6 lg:py-8">
       {/* 返回列表 */}
       <Link
         href="/equipment"
@@ -112,25 +112,8 @@ export default async function EquipmentDetailPage({
       <Card className="mb-8">
         <CardHeader className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
-            <CardTitle className="text-2xl">{equipment.name}</CardTitle>
-            {detail.category_name && <Badge>{detail.category_name}</Badge>}
+            <CardTitle className="text-xl lg:text-2xl">{equipment.name}</CardTitle>
           </div>
-          {/* 分类路径面包屑 */}
-          {detail.category_path.length > 0 && (
-            <nav aria-label="分类路径" className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
-              {detail.category_path.map((item, i) => (
-                <span key={item.id} className="flex items-center gap-1">
-                  {i > 0 && <span className="text-muted-foreground/60">&gt;</span>}
-                  <Link
-                    href={`/categories/${item.id}`}
-                    className="hover:text-primary hover:underline"
-                  >
-                    {item.name}
-                  </Link>
-                </span>
-              ))}
-            </nav>
-          )}
           {/* 标签 */}
           {detail.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
@@ -144,7 +127,7 @@ export default async function EquipmentDetailPage({
           <p className="text-sm text-muted-foreground">ID：{equipment.id}</p>
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-5 lg:space-y-6">
           {/* ---- 设备图片（封面 + 图片资料，可点击放大） ---- */}
           {galleryImages.length > 0 && (
             <ImageGallery images={galleryImages} height={360} />
@@ -159,10 +142,6 @@ export default async function EquipmentDetailPage({
             <div>
               <dt className="text-sm text-muted-foreground">制造商</dt>
               <dd className="mt-0.5 font-medium">{equipment.manufacturer || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-sm text-muted-foreground">设备分类</dt>
-              <dd className="mt-0.5 font-medium">{detail.category_name || "未分类"}</dd>
             </div>
             <div>
               <dt className="text-sm text-muted-foreground">更新时间</dt>

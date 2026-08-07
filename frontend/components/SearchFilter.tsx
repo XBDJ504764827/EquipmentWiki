@@ -7,13 +7,10 @@ import { cn } from "@/lib/utils";
 interface SearchFilterProps {
   /** 当前关键词 */
   keyword: string;
-  /** 可选分类列表 */
-  categories: string[];
   /** 可选厂家列表 */
   manufacturers: string[];
   /** 可选标签列表 */
   tags: string[];
-  initialCategory?: string;
   initialManufacturer?: string;
   initialTag?: string;
 }
@@ -25,23 +22,19 @@ interface SearchFilterProps {
  */
 export function SearchFilter({
   keyword,
-  categories,
   manufacturers,
   tags,
-  initialCategory = "",
   initialManufacturer = "",
   initialTag = "",
 }: SearchFilterProps) {
   const router = useRouter();
 
-  function applyFilter(key: "category" | "manufacturer" | "tag", value: string) {
+  function applyFilter(key: "manufacturer" | "tag", value: string) {
     const params = new URLSearchParams();
     if (keyword) params.set("keyword", keyword);
-    if (key === "category") params.set("category", value);
     if (key === "manufacturer") params.set("manufacturer", value);
     if (key === "tag") params.set("tag", value);
     // 保留其他已选筛选
-    if (key !== "category" && initialCategory) params.set("category", initialCategory);
     if (key !== "manufacturer" && initialManufacturer)
       params.set("manufacturer", initialManufacturer);
     if (key !== "tag" && initialTag) params.set("tag", initialTag);
@@ -53,28 +46,10 @@ export function SearchFilter({
     "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
   );
 
-  const hasFilter = initialCategory || initialManufacturer || initialTag;
+  const hasFilter = initialManufacturer || initialTag;
 
   return (
     <div className="flex flex-wrap items-center gap-3 text-sm">
-      {categories.length > 0 && (
-        <label className="flex items-center gap-2 text-muted-foreground">
-          分类
-          <select
-            className={selectCls}
-            value={initialCategory}
-            onChange={(e) => applyFilter("category", e.target.value)}
-          >
-            <option value="">全部</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-
       {manufacturers.length > 0 && (
         <label className="flex items-center gap-2 text-muted-foreground">
           厂家

@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -35,12 +34,7 @@ export function EquipmentCard({ equipment }: { equipment: EquipmentWithCategory 
       </div>
 
       <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-base leading-snug">{equipment.equipment.name}</CardTitle>
-          <Badge variant="secondary" className="shrink-0">
-            {equipment.category_name ?? "未分类"}
-          </Badge>
-        </div>
+        <CardTitle className="text-base leading-snug">{equipment.equipment.name}</CardTitle>
       </CardHeader>
 
       <CardContent className="flex-1 space-y-1.5 pb-3 text-sm text-muted-foreground">

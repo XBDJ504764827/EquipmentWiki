@@ -36,7 +36,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1;
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-4xl px-4 py-5 sm:px-6 lg:py-8">
       <h1 className="mb-2 text-2xl font-bold tracking-tight">维修知识文章</h1>
       <p className="mb-6 text-muted-foreground">维修教程 · 操作指南 · 维护教程 · 维修经验</p>
 
@@ -66,7 +66,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
       </div>
 
       {error ? (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/5 py-16 text-center text-destructive">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/5 py-10 lg:py-16 text-center text-destructive">
           {error}
         </div>
       ) : (
@@ -76,7 +76,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
           </p>
 
           {data && data.items.length === 0 ? (
-            <p className="rounded-md border border-dashed py-16 text-center text-muted-foreground">
+            <p className="rounded-md border border-dashed py-10 lg:py-16 text-center text-muted-foreground">
               暂无文章
             </p>
           ) : (

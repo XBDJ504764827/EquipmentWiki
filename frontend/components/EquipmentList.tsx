@@ -8,8 +8,6 @@ import type { EquipmentListResult } from "@/lib/api";
 interface EquipmentListProps {
   /** 分页数据 */
   data: EquipmentListResult;
-  /** 当前分类筛选（分页链接需保留） */
-  categoryId?: number | null;
 }
 
 /**
@@ -17,10 +15,9 @@ interface EquipmentListProps {
  * 分页通过 URL query 参数实现（/equipment?page=N），
  * 页面本身是服务端渲染，翻页即重新请求。
  */
-export function EquipmentList({ data, categoryId = null }: EquipmentListProps) {
-  /** 分页链接：保留分类筛选参数 */
-  const pageHref = (page: number) =>
-    `/equipment?page=${page}${categoryId != null ? `&category_id=${categoryId}` : ""}`;
+export function EquipmentList({ data }: EquipmentListProps) {
+  /** 分页链接 */
+  const pageHref = (page: number) => `/equipment?page=${page}`;
   const { items, page, limit, total } = data;
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
